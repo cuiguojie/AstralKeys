@@ -42,7 +42,8 @@ end
 function e.AnnounceNewKey(keyLink, level)
 	if not IsInGroup() then return end
 	if not e.AnnounceKey() then return end
-	SendChatMessage('Astral Keys: New key ' .. keyLink .. ' +' .. level, 'PARTY')
+	--SendChatMessage('Astral Keys: New key ' .. keyLink .. ' +' .. level, 'PARTY')
+	print(keyLink)
 end
 
 local function UpdateKeyList(entry)
@@ -108,7 +109,7 @@ local function UpdateKeyList(entry)
 				end
 			else
 				table.insert(AstralKeys, {name = unit, class = unitClass, realm = unitRealm, map = dungeonID, level = keyLevel, a1 = affixOne, a2 = affixTwo, a3 = affixThree, weeklyCache = weekly10})
-				e.SetUnitID(unit .. '-' .. unitRealm, #AstralKeys)
+				e.SetUnitID(unit, unitRealm, #AstralKeys)
 				if unit == e.PlayerName() and unitRealm == e.PlayerRealm() then
 					e.SetPlayerID()
 				end
@@ -163,7 +164,7 @@ local function UpdateKeyList(entry)
 			end
 		else
 			table.insert(AstralKeys, {name = unit, class = unitClass, realm = unitRealm, map = dungeonID, level = keyLevel, a1 = affixOne, a2 = affixTwo, a3 = affixThree, weeklyCache = weekly10})
-			e.SetUnitID(unit .. '-' .. unitRealm, #AstralKeys)
+			e.SetUnitID(unit, unitRealm, #AstralKeys)
 			if unit == e.PlayerName() and unitRealm == e.PlayerRealm() then
 				e.SetPlayerID()
 			end

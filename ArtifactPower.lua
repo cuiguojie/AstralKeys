@@ -152,16 +152,14 @@ function e.GetWeeklyAP(keyLevel)
 	return 0
 end
 
-function e.MapApText(mapID, keyLevel, isUsable)
-	if isUsable == 0 then return 'Depleted key.' end
-
+function e.MapApText(mapID, keyLevel)
 	local amount = e.GetMapAP(mapID, keyLevel) * e.GetAKBonus(e.ParseAKLevel())
 	local s = ''
 	local chest1 = e.ConvertToSI(amount/math.floor(GetMapTime(mapID, 1)/60))
 	local chest2 = e.ConvertToSI(amount/math.floor(GetMapTime(mapID, 2)/60))
 	local chest3 = e.ConvertToSI(amount/math.floor(GetMapTime(mapID, 3)/60))
 	s = e.ConvertToSI(amount) .. ' AP\n' .. '+1 ' .. chest1 .. '/m \n+2 ' .. chest2 .. '/m  \n+3 ' .. chest3 .. '/m'
-	return s
 
+	return s
 end
 		

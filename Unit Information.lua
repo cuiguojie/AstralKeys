@@ -26,8 +26,8 @@ end
 -- @param unit  Unit name and server
 -- @param unitID integer
 
-function e.SetUnitID(unit, unitID)
-	unitList[unit] = unitID
+function e.SetUnitID(unit, realm, unitID)
+	unitList[unit .. '-' .. realm] = unitID
 end
 
 -- Retrieves ID number for associated unit
