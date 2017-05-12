@@ -8,7 +8,7 @@ local highestVersion = 0
 local find, sub = string.find, string.sub
 
 local function AddonMessage(index)	
-	return AstralKeys[index].name .. ":" .. AstralKeys[index].class .. ':' .. AstralKeys[index].realm .. ':' .. AstralKeys[index].map .. ':' .. AstralKeys[index].level .. ':' .. AstralKeys[index].usable .. ':' .. AstralKeys[index].a1 .. ':' .. AstralKeys[index].a2 .. ':' .. AstralKeys[index].a3 .. ':' .. AstralKeys[index].weeklyCache
+	return AstralKeys[index].name .. ":" .. AstralKeys[index].class .. ':' .. AstralKeys[index].realm .. ':' .. AstralKeys[index].map .. ':' .. AstralKeys[index].level .. ':' .. AstralKeys[index].a1 .. ':' .. AstralKeys[index].a2 .. ':' .. AstralKeys[index].a3 .. ':' .. AstralKeys[index].weeklyCache
 end
 
 local akComms = CreateFrame('FRAME')
@@ -77,11 +77,10 @@ local function UpdateKeyList(entry)
 
 			local dungeonID = tonumber(messageContents[4])
 			local keyLevel = tonumber(messageContents[5])
-			local isUsable = tonumber(messageContents[6])
-			local affixOne = tonumber(messageContents[7])
-			local affixTwo = tonumber(messageContents[8])
-			local affixThree = tonumber(messageContents[9])
-			local weekly10 = tonumber(messageContents[10])
+			local affixOne = tonumber(messageContents[6])
+			local affixTwo = tonumber(messageContents[7])
+			local affixThree = tonumber(messageContents[8])
+			local weekly10 = tonumber(messageContents[9])
 
 			if not e.UnitInGuild(unit .. '-' .. unitRealm) then return end
 
@@ -102,14 +101,13 @@ local function UpdateKeyList(entry)
 			if id then
 				if AstralKeys[id].weeklyCache ~= weekly10 then AstralKeys[id].weeklyCache = weekly10 end
 
-				if AstralKeys[id].level < keyLevel or AstralKeys[id].usable ~= isUsable then
+				if AstralKeys[id].level < keyLevel then
 					AstralKeys[id].map = dungeonID
 					AstralKeys[id].level = keyLevel
-					AstralKeys[id].usable = isUsable
 					e.UpdateFrames()
 				end
 			else
-				table.insert(AstralKeys, {name = unit, class = unitClass, realm = unitRealm, map = dungeonID, level = keyLevel, usable = isUsable, a1 = affixOne, a2 = affixTwo, a3 = affixThree, weeklyCache = weekly10})
+				table.insert(AstralKeys, {name = unit, class = unitClass, realm = unitRealm, map = dungeonID, level = keyLevel, a1 = affixOne, a2 = affixTwo, a3 = affixThree, weeklyCache = weekly10})
 				e.SetUnitID(unit .. '-' .. unitRealm, #AstralKeys)
 				if unit == e.PlayerName() and unitRealm == e.PlayerRealm() then
 					e.SetPlayerID()
@@ -134,11 +132,10 @@ local function UpdateKeyList(entry)
 
 		local dungeonID = tonumber(messageContents[4])
 		local keyLevel = tonumber(messageContents[5])
-		local isUsable = tonumber(messageContents[6])
-		local affixOne = tonumber(messageContents[7])
-		local affixTwo = tonumber(messageContents[8])
-		local affixThree = tonumber(messageContents[9])
-		local weekly10 = tonumber(messageContents[10])
+		local affixOne = tonumber(messageContents[6])
+		local affixTwo = tonumber(messageContents[7])
+		local affixThree = tonumber(messageContents[8])
+		local weekly10 = tonumber(messageContents[9])
 
 		if not e.UnitInGuild(unit .. '-' .. unitRealm) then return end
 
@@ -159,14 +156,13 @@ local function UpdateKeyList(entry)
 		if id then
 			if AstralKeys[id].weeklyCache ~= weekly10 then AstralKeys[id].weeklyCache = weekly10 end
 
-			if AstralKeys[id].level < keyLevel or AstralKeys[id].usable ~= isUsable then
+			if AstralKeys[id].level < keyLevel then
 				AstralKeys[id].map = dungeonID
 				AstralKeys[id].level = keyLevel
-				AstralKeys[id].usable = isUsable
 				e.UpdateFrames()
 			end
 		else
-			table.insert(AstralKeys, {name = unit, class = unitClass, realm = unitRealm, map = dungeonID, level = keyLevel, usable = isUsable, a1 = affixOne, a2 = affixTwo, a3 = affixThree, weeklyCache = weekly10})
+			table.insert(AstralKeys, {name = unit, class = unitClass, realm = unitRealm, map = dungeonID, level = keyLevel, a1 = affixOne, a2 = affixTwo, a3 = affixThree, weeklyCache = weekly10})
 			e.SetUnitID(unit .. '-' .. unitRealm, #AstralKeys)
 			if unit == e.PlayerName() and unitRealm == e.PlayerRealm() then
 				e.SetPlayerID()

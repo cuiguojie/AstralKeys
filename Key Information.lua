@@ -54,16 +54,12 @@ e.RegisterEvent('CHALLENGE_MODE_MAPS_UPDATE', function()
  end)]]
 
 function e.CreateKeyLink(index)
-	local s = '|c'
-	local mapID, keyLevel, usable, a1, a2, a3 = AstralKeys[index].map, AstralKeys[index].level, AstralKeys[index].usable, AstralKeys[index].a1, AstralKeys[index].a2, AstralKeys[index].a3
+	local s = '|cffa335ee'
+	local mapID, keyLevel, a1, a2, a3 = AstralKeys[index].map, AstralKeys[index].level, AstralKeys[index].a1, AstralKeys[index].a2, AstralKeys[index].a3
 
-	if tonumber(usable) == 1 then
-		s = s .. PURPLE
-	else
-		s = s .. GRAY
-	end
+	--s = s .. PURPLE
 
-	s = s .. '|Hkeystone:' .. mapID .. ':' .. keyLevel .. ':' .. usable .. ':' .. a1 .. ':' .. a2 .. ':' .. a3 .. '|h[Keystone: ' .. e.GetMapName(mapID) .. ']|h|r'
+	s = s .. '|Hkeystone:' .. mapID .. ':' .. keyLevel .. ':' .. a1 .. ':' .. a2 .. ':' .. a3 .. '|h[Keystone: ' .. e.GetMapName(mapID) .. ']|h|r'
 	s = s:gsub('\124\124', '\124')
 
 	return s, keyLevel
@@ -95,7 +91,7 @@ function e.GetAffix(affixNumber)
 end
 
 function e.FindKeyStone(sendUpdate, anounceKey)
-	local mapID, keyLevel, usable, a1, a2, a3, s, itemID, delink, link
+	local mapID, keyLevel, a1, a2, a3, s, itemID, delink, link
 	local s = ''
 
 	for bag = 0, NUM_BAG_SLOTS + 1 do
@@ -103,8 +99,8 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 			itemID = GetContainerItemID(bag, slot)
 			if (itemID and itemID == 138019) then
 				link = GetContainerItemLink(bag, slot)
-				mapID, keyLevel, usable, a1, a2, a3 = e.ParseLink(link)
-				s = 'updateV4 ' .. e.PlayerName() .. ':' .. e.PlayerClass() .. ':' .. e.PlayerRealm() ..':' .. mapID .. ':' .. keyLevel .. ':' .. usable .. ':' .. a1 .. ':' .. a2 .. ':' .. a3 .. ':' .. Completed10()
+				mapID, keyLevel, a1, a2, a3 = e.ParseLink(link)
+				s = 'updateV4 ' .. e.PlayerName() .. ':' .. e.PlayerClass() .. ':' .. e.PlayerRealm() ..':' .. mapID .. ':' .. keyLevel  .. ':' .. a1 .. ':' .. a2 .. ':' .. a3 .. ':' .. Completed10()
 				--s = 'updateV4 CHARACTERSAZ:DEMONHUNTER:Bleeding Hollow:201:22:1:13:13:10:16:1'				
 			end
 		end
@@ -128,8 +124,8 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 		end
 	end
 
-	local oldMap, oldLevel, oldUsable = e.GetUnitKeyByID(e.PlayerID())
-	if tonumber(oldMap) == tonumber(mapID) and tonumber(oldLevel) == tonumber(keyLevel) and tonumber(oldUsable) == tonumber(usable) then return end
+	local oldMap, oldLevel = e.GetUnitKeyByID(e.PlayerID())
+	if tonumber(oldMap) == tonumber(mapID) and tonumber(oldLevel) == tonumber(keyLevel) then return end
 
 	if link and e.IsEventRegistered('BAG_UPDATE') then
 		e.UnregisterEvent('BAG_UPDATE')
@@ -143,10 +139,9 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 			for i = 1, #AstralKeys do
 				if AstralKeys[i].name == e.PlayerName() then
 					foundPlayer = true
-					if AstralKeys[i].level < tonumber(keyLevel) or AstralKeys[i].usable ~= tonumber(usable) then
+					if AstralKeys[i].level < tonumber(keyLevel) then
 						AstralKeys[i].map = tonumber(mapID)
 						AstralKeys[i].level = tonumber(keyLevel)
-						AstralKeys[i].usable = tonumber(usable)
 						AstralKeys[i].a1 = tonumber(a1)
 						AstralKeys[i].a2 = tonumber(a2)
 						AstralKeys[i].a3 = tonumber(a3)
@@ -161,7 +156,6 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 				['realm'] = e.PlayerRealm(),
 				['map'] = tonumber(mapID),
 				['level'] = tonumber(keyLevel),
-				['usable'] = tonumber(usable),
 				['a1'] = tonumber(a1),
 				['a2'] = tonumber(a2),
 				['a3'] = tonumber(a3),
@@ -170,38 +164,30 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 			end
 		end
 	end
-	if anounceKey and tonumber(usable) == 1 then
+	if anounceKey then
 		e.AnnounceNewKey(link, keyLevel)
 	end
 end
 
-local function CreateKeyText(mapID, level, usable)
-	if not isDepleted then
-		return level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID)
-	else
-		if tonumber(isDepleted) == 0 then
-			return WrapTextInColorCode(level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID), 'ff9d9d9d')
-		else
-			return level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID)
-		end
-	end
+local function CreateKeyText(mapID, level)
+	return level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID)
 end
 
--- Parses item link to get mapID, key level, isUsable, affix1, affix2, affix3
+-- Parses item link to get mapID, key level, affix1, affix2, affix3
 -- @param link Item Link for keystone
--- return mapID, keyLevel, usable, affix1, affix2, affix3 Integer values
+-- return mapID, keyLevel, affix1, affix2, affix3 Integer values
 
 function e.ParseLink(link)
 	if not link:find('keystone') then return end -- Not a keystone link, don't do anything
 	local delink = link:gsub('\124', '\124\124')
-	local mapID, keyLevel, usable, affix1, affix2, affix3 = delink:match(':(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)')
-	return mapID, keyLevel, usable, affix1, affix2, affix3
+	local mapID, keyLevel, affix1, affix2, affix3 = delink:match(':(%d+):(%d+):(%d+):(%d+):(%d+)')
+	return mapID, keyLevel, affix1, affix2, affix3
 end
 
 function e.GetUnitKeyByID(id)
 	if not id or (id < 1 ) then return end
 
-	return AstralKeys[id]['map'], AstralKeys[id]['level'], AstralKeys[id]['usable']
+	return AstralKeys[id]['map'], AstralKeys[id]['level']
 end
 
 function e.GetCharacterKey(unit)
@@ -209,7 +195,7 @@ function e.GetCharacterKey(unit)
 
 	for i = 1, #AstralKeys do
 		if AstralKeys[i].name == unit then
-			return CreateKeyText(AstralKeys[i].map, AstralKeys[i].level, AstralKeys[i].usable)
+			return CreateKeyText(AstralKeys[i].map, AstralKeys[i].level)
 		end
 	end
 
