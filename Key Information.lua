@@ -160,7 +160,11 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 				['a2'] = tonumber(a2),
 				['a3'] = tonumber(a3),
 				}
+<<<<<<< HEAD
 				e.SetUnitID(e.PlayerName(), e.PlayerRealm(), #AstralKeys)
+=======
+				e.SetUnitID(e.PlayerName() .. '-' ..  e.PlayerRealm(), #AstralKeys)
+>>>>>>> refs/remotes/origin/master
 			end
 		end
 	end
@@ -169,8 +173,21 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 	end
 end
 
+<<<<<<< HEAD
 local function CreateKeyText(mapID, level)
 	return level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID)
+=======
+local function CreateKeyText(mapID, level, usable)
+	if not usable then
+		return level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID)
+	else
+		if tonumber(usable) == 0 then
+			return WrapTextInColorCode(level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID), 'ff9d9d9d')
+		else
+			return level .. ' ' .. C_ChallengeMode.GetMapInfo(mapID)
+		end
+	end
+>>>>>>> refs/remotes/origin/master
 end
 
 -- Parses item link to get mapID, key level, affix1, affix2, affix3
