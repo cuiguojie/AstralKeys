@@ -18,9 +18,11 @@ edgeFile = "Interface\\ChatFrame\\ChatFrameBackground", tile = true, tileSize = 
 insets = {left = 0, right = 0, top = 0, bottom = 0}
 }
 
+local normalFontName, normalFontHeight = GameFontNormal:GetFont();
+
 local FONT_HEADER = "Interface\\AddOns\\AstralKeys\\Media\\big_noodle_titling.TTF"
-local FONT_CONTENT = "Interface\\AddOns\\AstralKeys\\Media\\Lato-Regular.TTF"
-local FONT_SIZE = 13
+local FONT_CONTENT = normalFontName
+local FONT_SIZE = normalFontHeight
 
 local FONT_OBJECT_RIGHT = CreateFont("FONT_OBJECT_RIGHT")
 FONT_OBJECT_RIGHT:SetFont(FONT_CONTENT, FONT_SIZE)
