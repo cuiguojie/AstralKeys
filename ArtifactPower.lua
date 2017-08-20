@@ -3,8 +3,6 @@ local _, e = ...
 local DUNGEON_TABLE = {}
 local WEEKLY_AP = {}
 
-local L = setmetatable({}, {__index=function(t,i) return i end})
-
 local L = setmetatable(GetLocale() == 'zhTW' and {
    ['Eye of Azshara'] = '艾薩拉之眼',
    ['Darkheart Thicket'] = '暗心灌木林',
