@@ -6,6 +6,10 @@ local PURPLE = 'ffa335ee'
 
 local WEEKLY_LEVEL = 15
 
+local L = setmetatable(GetLocale() == 'zhTW' and {
+   ['Keystone'] = '鑰石',
+} or {}, {__index=function(t,i) return i end})
+
 local function Weekly()
 	e.GetBestClear()
 	if AstralCharacters[e.CharacterID()].level >= WEEKLY_LEVEL then
@@ -29,7 +33,7 @@ AstralEvents:Register('CHALLENGE_MODE_MAPS_UPDATE', InitData, 'initData')
 
 
 function e.CreateKeyLink(index)
-	local s = strformat('|cffa335ee|Hkeystone:%d:%d:%d:%d:%d|h[Keystone: %s]|h|r', AstralKeys[index][3], AstralKeys[index][4], e.AffixOne(), e.AffixTwo(), e.AffixThree(), e.GetMapName(AstralKeys[index][3]))
+	local s = strformat('|cffa335ee|Hkeystone:%d:%d:%d:%d:%d|h[%s: %s]|h|r', AstralKeys[index][3], AstralKeys[index][4], e.AffixOne(), e.AffixTwo(), e.AffixThree(), L["Keystone"], e.GetMapName(AstralKeys[index][3]))
 	s = s:gsub('\124\124', '\124')
 
 	return s, AstralKeys[index][4]

@@ -6,6 +6,12 @@ edgeFile = nil, tile = true, tileSize = 16, edgeSize = 16,
 insets = {left = 0, right = 0, top = 0, bottom = 0}
 }
 
+local L = setmetatable(GetLocale() == 'zhTW' and {
+   ['Level'] = '傳奇等級',
+   ['Dungeon'] = '地城',
+   ['Player'] = '角色',
+} or {}, {__index=function(t,i) return i end})
+
 local POSITIONS = {
 	[1] = 'LEFT',
 	[2] = 'CENTER',
@@ -820,7 +826,7 @@ contentFrame:SetScript('OnLeave', function()
 	contentFrame.slider:SetAlpha(0.2)
 	end)
 
-local keyButton = CreateButton(contentFrame, 'keyButton', 50, 20, 'Level', FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT) --75
+local keyButton = CreateButton(contentFrame, 'keyButton', 50, 20, L['Level'], FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT) --75
 keyButton:SetPoint('BOTTOMLEFT', contentFrame, 'TOPLEFT')
 keyButton:SetScript('OnClick', function()
 	contentFrame:ResetSlider()
@@ -835,7 +841,7 @@ keyButton:SetScript('OnClick', function()
 
 	end)
 
-local mapButton = CreateButton(contentFrame, 'mapButton', 190, 20, 'Dungeon', FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT)
+local mapButton = CreateButton(contentFrame, 'mapButton', 190, 20, L['Dungeon'], FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT)
 mapButton:SetPoint('LEFT', keyButton, 'RIGHT')
 mapButton:SetScript('OnClick', function()
 	contentFrame:ResetSlider()
@@ -850,7 +856,7 @@ mapButton:SetScript('OnClick', function()
 
 	end)
 
-local nameButton = CreateButton(contentFrame, 'nameButton', 110, 20, 'Player', FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT)
+local nameButton = CreateButton(contentFrame, 'nameButton', 110, 20, L['Player'], FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT)
 nameButton:SetPoint('LEFT', mapButton, 'RIGHT')
 nameButton:SetScript('OnClick', function()
 	contentFrame:ResetSlider()
