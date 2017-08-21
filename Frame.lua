@@ -1,16 +1,12 @@
 local _, e = ...
 
+local L = LibStub('AceLocale-3.0'):GetLocale('AstralKeys')
+
 local BACKDROP = {
 bgFile = "Interface/Tooltips/UI-Tooltip-Background",
 edgeFile = nil, tile = true, tileSize = 16, edgeSize = 16,
 insets = {left = 0, right = 0, top = 0, bottom = 0}
 }
-
-local L = setmetatable(GetLocale() == 'zhTW' and {
-   ['Level'] = '傳奇等級',
-   ['Dungeon'] = '地城',
-   ['Player'] = '角色',
-} or {}, {__index=function(t,i) return i end})
 
 local POSITIONS = {
 	[1] = 'LEFT',

@@ -1,22 +1,9 @@
 local _, e = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("AstralKeys")
+
 local DUNGEON_TABLE = {}
 local WEEKLY_AP = {}
-
-local L = setmetatable(GetLocale() == 'zhTW' and {
-   ['Eye of Azshara'] = '艾薩拉之眼',
-   ['Darkheart Thicket'] = '暗心灌木林',
-   ['Black Rook Hold'] = '玄鴉堡',
-   ['Halls of Valor'] = '英靈殿',
-   ['Neltharion\'s Lair'] = '耐薩里奧巢穴',
-   ['Vault of the Wardens'] = '看守者鐵獄',
-   ['Maw of Souls'] = '靈魂之喉',
-   ['The Arcway'] = '幽暗地道',
-   ['Court of Stars'] = '眾星之廷',
-   ['Return to Karazhan: Lower'] = '重返卡拉讚: 下層',
-   ['Cathedral of Eternal Nightr'] = '永夜聖殿',
-   ['Return to Karazhan: Upper'] = '重返卡拉讚: 上層',
-} or {}, {__index=function(t,i) return i end})
 
 --[[
 RUSSIAN

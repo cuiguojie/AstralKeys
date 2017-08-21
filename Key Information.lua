@@ -1,14 +1,13 @@
 local ADDON, e = ...
+
+local L = LibStub('AceLocale-3.0'):GetLocale('AstralKeys')
+
 local strformat = string.format
 
 local GRAY = 'ff9d9d9d'
 local PURPLE = 'ffa335ee'
 
 e.CACHE_LEVEL = 10
-
-local L = setmetatable(GetLocale() == 'zhTW' and {
-   ['Keystone'] = '鑰石',
-} or {}, {__index=function(t,i) return i end})
 
 local function Weekly()
 	e.GetBestClear()
@@ -33,7 +32,7 @@ AstralEvents:Register('CHALLENGE_MODE_MAPS_UPDATE', InitData, 'initData')
 
 
 function e.CreateKeyLink(index)
-	local s = strformat('|cffa335ee|Hkeystone:%d:%d:%d:%d:%d|h[%s: %s]|h|r', AstralKeys[index][3], AstralKeys[index][4], e.AffixOne(), e.AffixTwo(), e.AffixThree(), L["Keystone"], e.GetMapName(AstralKeys[index][3]))
+	local s = strformat('|cffa335ee|Hkeystone:%d:%d:%d:%d:%d|h[%s: %s]|h|r', AstralKeys[index][3], AstralKeys[index][4], e.AffixOne(), e.AffixTwo(), e.AffixThree(), L['Keystone'], e.GetMapName(AstralKeys[index][3]))
 	s = s:gsub('\124\124', '\124')
 
 	return s, AstralKeys[index][4]

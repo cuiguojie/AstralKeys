@@ -6,6 +6,10 @@
 ## SavedVariables: AstralKeys, AstralCharacters, AstralKeysSettings, AstralMinimap
 
 embeds.xml
+
+Locale\enUS.lua
+Locale\zhTW.lua
+
 Settings.lua
 Events.lua
 Tables.lua
