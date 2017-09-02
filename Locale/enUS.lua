@@ -10,7 +10,7 @@ L['Maw of Souls'] = 'Maw of Souls'
 L['The Arcway'] = 'The Arcway'
 L['Court of Stars'] = 'Court of Stars'
 L['Return to Karazhan: Lower'] = 'Return to Karazhan: Lower'
-L['Cathedral of Eternal Nightr'] = 'Cathedral of Eternal Nightr'
+L['Cathedral of Eternal Night'] = 'Cathedral of Eternal Night'
 L['Return to Karazhan: Upper'] = 'Return to Karazhan: Upper'
 
 L['Level'] = 'Level'

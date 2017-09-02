@@ -13,7 +13,7 @@ L['Maw of Souls'] = '靈魂之喉'
 L['The Arcway'] = '幽暗地道'
 L['Court of Stars'] = '眾星之廷'
 L['Return to Karazhan: Lower'] = '重返卡拉讚: 下層'
-L['Cathedral of Eternal Nightr'] = '永夜聖殿'
+L['Cathedral of Eternal Night'] = '永夜聖殿'
 L['Return to Karazhan: Upper'] = '重返卡拉讚: 上層'
 
 L['Level'] = '傳奇等級'
