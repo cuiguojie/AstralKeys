@@ -15,7 +15,7 @@ L['Court of Stars'] = '眾星之廷'
 L['Return to Karazhan: Lower'] = '重返卡拉讚: 下層'
 L['Cathedral of Eternal Night'] = '永夜聖殿'
 L['Return to Karazhan: Upper'] = '重返卡拉讚: 上層'
-
+L['Seat of the Triumvirate'] = '三傑議會之座'
 L['Level'] = '傳奇等級'
 L['Dungeon'] = '地城'
 L['Player'] = '角色'

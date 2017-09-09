@@ -14,7 +14,7 @@ function addon:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New("AstralMinimap", {
 		profile = {
 			minimap = {
-				hide = false,
+				hide = true,
 			},
 		},
 	})

@@ -45,7 +45,7 @@ DUNGEON_TABLE[234] = {}
 DUNGEON_TABLE[234]['name'] = L['Return to Karazhan: Upper']
 DUNGEON_TABLE[234]['tname'] = 'Upper Karazhan'
 DUNGEON_TABLE[239] = {}
-DUNGEON_TABLE[239]['name'] = 'Seat of the Triumvirate'
+DUNGEON_TABLE[239]['name'] = L['Seat of the Triumvirate']
 
 --[[ 
 Times
