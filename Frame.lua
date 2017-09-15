@@ -890,6 +890,7 @@ AstralKeyFrame:SetScript('OnKeyDown', function(self, key)
 	end)
 
 AstralKeyFrame:SetScript('OnShow', function(self)
+	e.UpdateFrames()
 	self:SetPropagateKeyboardInput(true)
 	end)
 
@@ -1055,7 +1056,7 @@ end
 
 
 function e.UpdateFrames()
-	if not init then return end
+	if not init or not AstralKeyFrame:IsShown() then return end
 
 	sortedTable = e.UpdateTables(sortedTable)
 
