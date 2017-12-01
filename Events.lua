@@ -10,7 +10,7 @@ AstralEvents.dtbl = {}
 function AstralEvents:NewObject(f, name)
 	local obj = {}
 
-	obj.name = name or 'nil'
+	obj.name = name or 'anonymous'
 	obj.method = f
 
 	return obj
@@ -21,7 +21,7 @@ end
 -- @param f Function to be called when event is fired
 -- @param name Name of function, used as an identifier
 function AstralEvents:Register(event, f, name)
-	if self:IsRegistered(event, name) then return end
+	if self:IsRegistered(event, name) then return end -- Event already registered with same name, bail out
 	local obj = self:NewObject(f, name)
 
 	if not self.dtbl[event] then 
@@ -29,7 +29,6 @@ function AstralEvents:Register(event, f, name)
 		AstralEvents:RegisterEvent(event)
 	end
 	self.dtbl[event][name] = obj
-	--table.insert(self.dtbl[event], obj)
 end
 
 -- Unregisters function from being called on event
@@ -62,15 +61,14 @@ end
 
 -- Gets function bound to event
 -- @param event Event to be queried
--- @param callback Object name to be retrieved
--- @return Function
-
-function AstralEvents:GetRegisteredFunction(event, callback)
+-- @param handler Object name to be retrieved
+-- @return function The function pertaining to the given handler for said event
+function AstralEvents:GetRegisteredFunction(event, handler)
 	local objs = self.dtbl[event]
 	if not objs then return end
 
-	if objs[callback] then
-		return objs[callback].method
+	if objs[handler] then
+		return objs[handler].method
 	else
 		return nil
 	end

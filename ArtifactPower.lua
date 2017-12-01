@@ -10,6 +10,7 @@ RUSSIAN
 Upper Kara   Верхний Каражан
 Lowre Kara   Нижний Каражан
 ]]
+
 DUNGEON_TABLE[197] = {}
 --DUNGEON_TABLE[197]['enUS'] 
 --DUNGEON_TABLE[197]['ptBR'] 
@@ -36,14 +37,11 @@ DUNGEON_TABLE[209]['name'] = L['The Arcway']
 DUNGEON_TABLE[210] = {}
 DUNGEON_TABLE[210]['name'] = L['Court of Stars']
 DUNGEON_TABLE[227] = {}
-DUNGEON_TABLE[227]['name'] = L['Return to Karazhan: Lower']
-DUNGEON_TABLE[227]['tname'] = 'Lower Karazhan'
+DUNGEON_TABLE[227]['name'] = 'Return to Karazhan: Lower'
 DUNGEON_TABLE[233] = {}
-DUNGEON_TABLE[233]['name'] = L['Cathedral of Eternal Night']
-DUNGEON_TABLE[233]['tname'] = 'Cathedral'
+DUNGEON_TABLE[233]['name'] = 'Cathedral of Eternal Night'
 DUNGEON_TABLE[234] = {}
-DUNGEON_TABLE[234]['name'] = L['Return to Karazhan: Upper']
-DUNGEON_TABLE[234]['tname'] = 'Upper Karazhan'
+DUNGEON_TABLE[234]['name'] = 'Return to Karazhan: Upper'
 DUNGEON_TABLE[239] = {}
 DUNGEON_TABLE[239]['name'] = L['Seat of the Triumvirate']
 
@@ -83,6 +81,7 @@ function e.BuildMapTable()
 	for map in pairs(DUNGEON_TABLE) do
 		local name, mapID, runTime = C_ChallengeMode.GetMapInfo(map)
 		local a, b, c = runTime, runTime * .8, runTime * .6
+		DUNGEON_TABLE[map]['name'] = name
 		DUNGEON_TABLE[map]['chestTimes'] = {}
 		DUNGEON_TABLE[map].chestTimes[1] = a
 		DUNGEON_TABLE[map].chestTimes[2] = b
@@ -113,12 +112,9 @@ function e.BuildMapTable()
 	end
 end
 
-function e.GetMapName(mapID, truncate)
-	if not truncate then
-		return DUNGEON_TABLE[tonumber(mapID)]['name']
-	else
-		return DUNGEON_TABLE[tonumber(mapID)]['tname'] or DUNGEON_TABLE[tonumber(mapID)]['name']
-	end
+
+function e.GetMapName(mapID)
+	return DUNGEON_TABLE[tonumber(mapID)]['name']
 end
 
 local function GetMapTime(mapID, chestCount)
@@ -180,8 +176,7 @@ function e.MapApText(mapID, keyLevel)
 	local chest1 = e.ConvertToSI(amount/math.floor(GetMapTime(mapID, 1)/60))
 	local chest2 = e.ConvertToSI(amount/math.floor(GetMapTime(mapID, 2)/60))
 	local chest3 = e.ConvertToSI(amount/math.floor(GetMapTime(mapID, 3)/60))
-	s = e.ConvertToSI(amount) .. ' AP\n' .. '+1 ' .. chest1 .. '/m \n+2 ' .. chest2 .. '/m  \n+3 ' .. chest3 .. '/m'
-	return s
 
-end
-		
+	return e.ConvertToSI(amount) .. ' AP\n' .. '+1 ' .. chest1 .. '/m \n+2 ' .. chest2 .. '/m  \n+3 ' .. chest3 .. '/m'
+	
+end		
