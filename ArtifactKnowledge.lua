@@ -61,12 +61,12 @@ AK_BONUS[55] = 6300001
 
 -- Returns artifact bonus percent
 -- @param akLevel integer value representing artifact level
-function e.GetAKBonus(akLevel)
-	return AK_BONUS[tonumber(akLevel)]
+function e.GetAKBonus()
+	return AK_BONUS[math.min(e.Week + 35, #AK_BONUS)]
+	--return AK_BONUS[tonumber(akLevel)]
 end
 
 --Gets Artifact Knowledge level
 function e.ParseAKLevel()
-	local amount = select(2, GetCurrencyInfo(1171))
-	return amount
+	return math.min(e.Week + 35, #AK_BONUS)
 end

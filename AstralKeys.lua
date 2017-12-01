@@ -1,4 +1,5 @@
 local a, e = ...
+
 if not AstralKeys then AstralKeys = {} end
 if not AstralCharacters then AstralCharacters = {} end
 
@@ -24,17 +25,17 @@ IMP[5] = 'Q'
 
 function e.ConvertToSI(quantity)
 	local amount = quantity
-	local index = 0
+	local power = 0
 
 	while amount > 1000 do
-		index = index + 1
+		power = power + 1
 		amount = amount /1000
 	end
 
 	if amount < 10 then
-		return string.format('%.2f', amount) .. ' ' .. SI[index]
+		return string.format('%.2f', amount) .. ' ' .. IMP[power]
 	else
-		return math.floor(amount) .. ' ' .. SI[index]
+		return math.floor(amount) .. ' ' .. IMP[power]
 	end
 end
 
@@ -54,15 +55,14 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 	local d = date('*t', currentTime)
 	local hourOffset, minOffset = math.modf(difftime(currentTime, time(date('!*t', currentTime))))/3600
 
-	if regeion ~= 3 then
+	if region ~= 3 then
 		e.Week = math.floor((GetServerTime() - initializeTime[1]) / 604800)
 	else
-		e.Week = math.floor((GetServerTime() - initializeTime[3]) / 604800)
+		e.Week = math.floor((GetServerTime() - initializeTime[2]) / 604800)
 	end
 
-	e.SetPlayerName()
+	e.SetPlayerNameRealm()
 	e.SetPlayerClass()
-	e.SetPlayerRealm()
 
 	if currentTime > AstralKeysSettings.initTime then
 		wipe(AstralCharacters)
@@ -89,7 +89,7 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 					self.first = false
 				end
 
-				if time(date('*t')) > AstralKeysSettings.initTime then
+				if time(date('*t', GetServerTime())) > AstralKeysSettings.initTime then
 					AstralCharacters = {}
 					AstralKeys = {}
 					AstralAffixes = {}
@@ -97,6 +97,7 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 					AstralAffixes[2] = 0
 					AstralAffixes[3] = 0
 					AstralKeysSettings.initTime = e.DataResetTime()
+					e.Week = math.floor((GetServerTime() - initializeTime[1]) / 604800)
 					e.FindKeyStone(true, false)
 					self:SetScript('OnUpdate', nil)
 					self = nil
@@ -118,7 +119,7 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 					self.first = false
 				end
 
-				if time(date('*t')) > AstralKeysSettings.initTime then
+				if time(date('*t', GetServerTime())) > AstralKeysSettings.initTime then
 					AstralCharacters = {}
 					AstralKeys = {}
 					AstralAffixes = {}
@@ -127,6 +128,7 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 					AstralAffixes[3] = 0
 					AstralKeysSettings.initTime = e.DataResetTime()
 					e.FindKeyStone(true, false)
+					e.Week = math.floor((GetServerTime() - initializeTime[2]) / 604800)
 					self:SetScript('OnUpdate', nil)
 					self = nil
 				end
@@ -135,20 +137,15 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 			end)
 	end
 
-	RegisterAddonMessagePrefix('AstralKeys')
-
-	for i = 1, #AstralKeys do
+	for i = 1, #AstralKeys do -- index guild units
 		e.SetUnitID(AstralKeys[i][1], i)
 	end
-	e.SetPlayerID()
 
-	AstralEvents:Register('CURRENCY_DISPLAY_UPDATE', function(...)
-	for i = 1, #AstralCharacters do
-		if AstralCharacters[i].name == e.PlayerName() then
-			AstralCharacters[i].knowledge = e.GetAKBonus(e.ParseAKLevel())
-		end
-	end
-	end, 'currenyUpdate')
+	for i = 1, #AstralCharacters do -- index player's characters
+		e.SetCharacterID(AstralCharacters[i].unit, i)
+	end	
+
+	RegisterAddonMessagePrefix('AstralKeys')
 
 	C_ChallengeMode.RequestMapInfo()
 
