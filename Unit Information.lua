@@ -6,11 +6,12 @@ local guildList = {}
 -- Puts all guild member's into a table for checking if unit in same guild, stores value as rankIndex for filtering by rank
 local function UpdateGuildList()
 	wipe(guildList)
-	local name, rankIndex
+
 	for i = 1, GetNumGuildMembers() do
-		name, _, rankIndex = GetGuildRosterInfo(i)
+		local name, _, rankIndex, _, _, _, _, _, connected = GetGuildRosterInfo(i)
+		local guid = select(17, GetGuildRosterInfo(i))
 		if not name then return end
-		guildList[name] = rankIndex
+		guildList[name] = {rank = rankIndex + 1, isConnected = connected, guid = guid}
 	end
 end
 AstralEvents:Register('GUILD_ROSTER_UPDATE', UpdateGuildList, 'guildUpdate')
@@ -19,6 +20,27 @@ AstralEvents:Register('GUILD_ROSTER_UPDATE', UpdateGuildList, 'guildUpdate')
 -- @param unit Unit name and server
 function e.UnitInGuild(unit)
 	return guildList[unit] or false
+end
+
+function e.GuildMemberOnline(unit)
+	if not guildList[unit] then return false
+	else
+		return guildList[unit].isConnected
+	end
+end
+
+function e.GuildMemberRank(unit)
+	if not guildList[unit] then return false
+	else
+		return guildList[unit].rank
+	end
+end
+
+function e.GuildMemberGuid(unit)
+	if not guildList[unit] then return nil
+	else
+		return guildList[unit].guid
+	end
 end
 
 -- Sets a number to a unit for quicker access to table
@@ -34,55 +56,32 @@ function e.UnitID(unit)
 	return UNIT_LIST[unit] or false
 end
 
--- Clears unit list
-function e.WipeUnitList()
-	wipe(UNIT_LIST)
-	UNIT_LIST['GUILD'] = {}
-	UNIT_LIST['BNET'] = {}
-	UNIT_LIST['FRIEND'] = {}
+function e.UnitName(id)
+	return AstralKeys[id][1]:sub(1, AstralKeys[id][1]:find('-') - 1)
 end
 
--- Retrieves unit from database
--- @param id int ID for said unit
--- @return str Unit name and realm, ex  'Phrike-Turalyon'
 function e.Unit(id)
 	return AstralKeys[id][1]
 end
 
--- Retrieves unit's realm from unit string
--- @param id int for unit
-function e.UnitRealm(id)
-	return AstralKeys[id][1]:sub(AstralKeys[id][1]:find('-') + 1)
-end
-
--- Returns Character name with server name removed
--- @param id int ID number for unit
--- @return Unit name with server name removed
-function e.UnitName(index)
-	return Ambiguate(AstralKeys[index][1], 'GUILD')
+-- Clears unit list
+function e.WipeUnitList()
+	wipe(UNIT_LIST)
 end
 
 --Gets unit class from saved variables
 -- @param id int ID number for the unit
 function e.UnitClass(id)
+	if not id then return nil end
 	return AstralKeys[id][2]
 end
 
--- TEST LATER
-function e.AddUnitKey(...)
-	if not AstralKeys[list] then AstralKeys[list] = {} end
-	table.insert(AstralKeys[list], {...})
+function e.UnitKeyLevel(id)
+	if not id then return nil end
+	return AstralKeys[id][4]
 end
 
-function e.UpdateUnitKey(list, btag, id, dungeonID, keyLevel, weekly, week, timeStamp)
-	if week >= e.Week then -- Does the key belong to this week or last's?
-		if AstralKeys[list][id][7] < timeStamp then
-			AstralKeys[list][id][3] = dungeonID
-			AstralKeys[list][id][4] = keyLevel
-			AstralKeys[list][id][6] = week
-			AstralKeys[list][id][7] = timeStamp
-		end
-	else
-		AstralKeys[list][id] = nil
-	end
+function e.UnitMapID(id)
+	if not id then return nil end
+	return AstralKeys[id][3]
 end

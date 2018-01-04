@@ -14,7 +14,7 @@ local POSITIONS = {
 	[3] = 'RIGHT',
 }
 
-local offset = 0
+local offset, shownOffset = 0, 0
 local characterOffset = 0
 
 local name, keyLevel, mapID, class, realm, indexEnd
@@ -44,33 +44,22 @@ FONT_OBJECT_CENTRE:SetTextColor(1, 1, 1)
 local FONT_OBJECT_HIGHLIGHT = CreateFont("FONT_OBJECT_HIGHLIGHT")
 FONT_OBJECT_HIGHLIGHT:SetFont(FONT_CONTENT, FONT_SIZE)
 FONT_OBJECT_HIGHLIGHT:SetJustifyH('CENTER')
-FONT_OBJECT_HIGHLIGHT:SetTextColor(192/255, 192/255, 192/255)
+FONT_OBJECT_HIGHLIGHT:SetTextColor(126/255, 126/255, 126/255)
 
 local sortedTable = {}
+sortedTable.numShown = 0
+sortedTable['guild'] = {}
+sortedTable['friend'] = {}
+local numShown = 0
 local characters = {}
 local characterTable = {}
 
-local function CreateHeader(parent, name, width, height, text, fontAdjust)
-	local frame = CreateFrame('FRAME', 'header_' .. name, parent)
-	frame:SetSize(width, height)
-
-	frame.s = frame:CreateFontString('BACKGROUND')
-	frame.s:SetFont(FONT_HEADER, FONT_SIZE + fontAdjust)
-	frame.s:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT')
-	frame.s:SetText(text)
-
-	frame.t = frame:CreateTexture('BACKGROUND')
-	frame.t:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT')
-	frame.t:SetSize(width, 1)
-	frame.t:SetColorTexture(1, 1, 1)
-	frame.t:SetGradientAlpha('HORIZONTAL', 1, 1, 1, 0.8, 0, 0 , 0, 0)
-
-	function frame:SetText(text)
-		self.s:SetText(text)
+local function MixIn(D, T)	
+	for k,v in pairs(T) do
+		if (type(v) == "function") and (force or (D[k] == nil)) then
+			D[k] = v;
+		end
 	end
-
-	return frame
-
 end
 
 local function CreateButton(parent, btnID, width, height, text, fontobject, highlightfont)
@@ -78,8 +67,6 @@ local function CreateButton(parent, btnID, width, height, text, fontobject, high
 	button.ID = btnID
 	button.sort = 0
 	button:SetSize(width, height)
-	--button:SetMovable(true)
-	--button:RegisterForDrag('LeftButton')
 
 	button.t = button:CreateTexture('BACKGROUND')
 	button.t:SetPoint('BOTTOMLEFT', button, 'BOTTOMLEFT', 5, 0)
@@ -95,13 +82,10 @@ local function CreateButton(parent, btnID, width, height, text, fontobject, high
 	button:EnableMouse(true)
 	button:SetMovable(true)
 
-	button:SetScript('OnDragStart', function(self)
-		self:StartMoving()
-		end)
-
-	button:SetScript('OnDragStop', function(self)
-		self:StopMovingOrSizing()
-		end)
+	function button:SetW(width)
+		self:SetWidth(width)
+		self.t:SetWidth(width - 10)
+	end
 
 	return button
 end
@@ -120,22 +104,17 @@ local function CreateCharacterFrame(parent, frameName, unitName, bestKey, create
 	frame.weeklyAP = 0
 	frame.realm = ''
 
-
-	frame.name = CreateFrame('FRAME', nil, frame)
+	frame.name = frame:CreateFontString('ARTWORK')
+	frame.name:SetJustifyH('LEFT')
 	frame.name:SetSize(175, 15)
+	frame.name:SetFont(FONT_CONTENT, FONT_SIZE)
 	frame.name:SetPoint('TOPLEFT', frame, 'TOPLEFT')
 
-	frame.name.string = frame.name:CreateFontString('ARTWORK')
-	frame.name.string:SetFont(FONT_CONTENT, FONT_SIZE)
-	frame.name.string:SetPoint('TOPLEFT', frame.name, 'TOPLEFT')
-
-	frame.keystone = CreateFrame('FRAME', nil, frame)
+	frame.keystone = frame:CreateFontString('ARTWORK')
+	frame.keystone:SetJustifyH('LEFT')
 	frame.keystone:SetSize(200, 15)
+	frame.keystone:SetFont(FONT_CONTENT, FONT_SIZE)
 	frame.keystone:SetPoint('BOTTOMLEFT', frame, 'BOTTOMLEFT', 10, 0)
-
-	frame.keystone.string = frame.keystone:CreateFontString('ARTWORK')
-	frame.keystone.string:SetFont(FONT_CONTENT, FONT_SIZE)
-	frame.keystone.string:SetPoint('BOTTOMLEFT', frame.keystone, 'BOTTOMLEFT')
 
 	if createDivider then
 
@@ -151,7 +130,7 @@ local function CreateCharacterFrame(parent, frameName, unitName, bestKey, create
 		self.bestKey = e.GetCharacterBestMap(characterID)
 		self.bestMap = e.GetCharacterBestMap(characterID)
 
-		self.name.string:SetText(WrapTextInColorCode(self.unit, select(4, GetClassColor(self.unitClass))) .. ' - ' .. self.bestKey)
+		self.name:SetText(WrapTextInColorCode(self.unit, select(4, GetClassColor(self.unitClass))) .. ' - ' .. self.bestKey)
 	end
 
 	function frame:UpdateInformation(characterID)
@@ -164,20 +143,20 @@ local function CreateCharacterFrame(parent, frameName, unitName, bestKey, create
 			self.bestMap = e.GetCharacterBestMap(characterID)
 			self.weeklyAP = e.GetWeeklyAP(self.bestKey)
 
-			self.keystone.string:SetText(e.GetCharacterKey(self.unit .. '-' .. self.realm))
+			self.keystone:SetText(e.GetCharacterKey(self.unit .. '-' .. self.realm))
 
 			if self.realm ~= e.PlayerRealm() then
 				self.unit = self.unit .. ' (*)'
 			end
 
 			if self.bestKey ~= 0 then
-				self.name.string:SetText(WrapTextInColorCode(self.unit, select(4, GetClassColor(self.unitClass))) .. ' - ' .. self.bestKey)
+				self.name:SetText(WrapTextInColorCode(self.unit, select(4, GetClassColor(self.unitClass))) .. ' - ' .. self.bestKey)
 			else
-				self.name.string:SetText(WrapTextInColorCode(self.unit, select(4, GetClassColor(self.unitClass))))
+				self.name:SetText(WrapTextInColorCode(self.unit, select(4, GetClassColor(self.unitClass))))
 			end
 		else
-			self.name.string:SetText('')
-			self.keystone.string:SetText('')
+			self.name:SetText('')
+			self.keystone:SetText('')
 			self.cid = -1
 		end
 	end
@@ -206,171 +185,239 @@ local function CreateCharacterFrame(parent, frameName, unitName, bestKey, create
 
 end
 
-local nameFrames = {}
-local keyFrames = {}
-local mapFrames = {}
-local completedFrames = {}
+local unit_frames = {}
 
-local function CreateUnitFrame(parent, unitID)
-	local frame = CreateFrame('FRAME', nil, UIParent)
-	frame:SetSize(500, 15)
+local UnitFrame = {}
+UnitFrame.__index = UnitFrame
 
-	local unitID = unitID
+function UnitFrame:NewFrame(parent)
+	local self = CreateFrame('FRAME', nil, parent)
+	self.unitID = 0
 
-	local name = e.UnitName(unitID)
-	local server = e.UnitServer(unitID)
-	local class = e.UnitClass(unitID)
-	
+	self:EnableMouse(true)
+	self:SetSize(380, 15)
 
+	self.levelString = self:CreateFontString('ARTWORK')
+	self.levelString:SetFont(FONT_CONTENT, FONT_SIZE)
+	self.levelString:SetJustifyH('LEFT')
+	self.levelString:SetSize(35, 15)
+	self.levelString:SetPoint('TOPLEFT', self, 'TOPLEFT', 5, 0)
 
+	self.dungeonString = self:CreateFontString('ARTWORK')
+	self.dungeonString:SetFont(FONT_CONTENT, FONT_SIZE)
+	self.dungeonString:SetJustifyH('LEFT')
+	self.dungeonString:SetSize(175, 15)
+	self.dungeonString:SetPoint('LEFT', self.levelString, 'RIGHT')
 
+	self.nameString = self:CreateFontString('ARTWORK')
+	self.nameString:SetFont(FONT_CONTENT, FONT_SIZE)
+	self.nameString:SetJustifyH('LEFT')
+	self.nameString:SetSize(135, 15)
+	self.nameString:SetPoint('LEFT', self.dungeonString, 'RIGHT')
 
+	self.weeklyTexture = self:CreateTexture('BACKGROUND')
+	self.weeklyTexture:SetSize(15, 15)
 
+	self.weeklyTexture:SetPoint('LEFT', self.nameString, 'RIGHT')
+	self.weeklyTexture:SetTexture('Interface\\AddOns\\AstralKeys\\Media\\check.tga')
+	self.weeklyTexture:Hide()
 
-end
-
-local function CreateNameFrame(parent, unitName, unitClass)
-	local frame = CreateFrame('FRAME', nil, parent)
-	frame:SetSize(110, 15)
-	frame.class = unitClass
-	if unitName ~= '' then
-		frame.realm = unitName:sub(unitName:find('-') + 1)
-		frame.name = unitName:sub(0, unitName:find('-') - 1)
-	else
-		frame.realm = ''
-		frame.name = ''
-	end
-
-	frame.string = frame:CreateFontString('ARTWORK')
-	frame.string:SetFont(FONT_CONTENT, FONT_SIZE)
-	frame.string:SetPoint('TOPLEFT', frame, 'TOPLEFT')
-	frame.string:SetWidth(110)
-	frame.string:SetJustifyH('LEFT')
-	frame.string:SetJustifyV('TOP')
-	if unitName ~= '' then
-		if frame.realm == e.PlayerRealm() then
-			frame.string:SetText(WrapTextInColorCode(frame.name, select(4, GetClassColor(frame.class))))
-		else
-			frame.string:SetText(WrapTextInColorCode(frame.name .. '(*)', select(4, GetClassColor(frame.class))))
-		end
-	end
-
-	function frame.SetNameInfo(self, unitName, unitClass)
-		if unitName ~= '' then
-			self.name = unitName:sub(0, unitName:find('-') - 1)
-			self.class = unitClass
-			self.realm = unitName:sub(unitName:find('-') + 1)
-			if self.realm == e.PlayerRealm() then
-				self.string:SetText(WrapTextInColorCode(self.name, select(4, GetClassColor(self.class))))
-			else
-				self.string:SetText(WrapTextInColorCode(string.format('%s (*)', self.name), select(4, GetClassColor(self.class))))
+	self.unit = CreateFrame('FRAME', nil, self)
+	self.unit:SetSize(170, 15)
+	self.unit:SetPoint('RIGHT', self, 'RIGHT')
+	self.unit:SetFrameLevel(10)
+	self.unit:EnableMouse(true)
+	self.unit:SetScript('OnMouseDown', function(self, button)
+		if button == 'RightButton' then
+			if AstralMenuFrame:IsShown() then
+				AstralMenuFrame:Hide()
+				return
 			end
-		else
-			self.string:SetText('')
+
+			if self:GetParent().unitID == 0 then return end
+
+			AstralMenuFrame:ClearAllPoints()
+			AstralMenuFrame:SetPoint('TOPLEFT', self, 'CENTER', 5, -5)
+			AstralMenuFrame:SetUnit(self:GetParent().unitID)
+			AstralMenuFrame:Show()
 		end
-	end
+	end)
 
-	return frame
-end
-
-local function CreateMapFrame(parent, mapID, keyLevel)
-	local frame = CreateFrame('FRAME', nil, parent)
-	frame:SetSize(170, 15)
-	frame.map = tonumber(mapID)
-	frame.level = tonumber(keyLevel)
-
-	frame.string = frame:CreateFontString('ARTWORK')
-	frame.string:SetFont(FONT_CONTENT, FONT_SIZE)
-	frame.string:SetPoint('TOPLEFT', frame, 'TOPLEFT')
-
-	if mapID ~= -1 then -- -1 is used to denote no mapID
-		frame.string:SetText(e.GetMapName(frame.map))
-	end
-
-	function frame.SetMapInfo(self, mapID,  keyLevel)
-		if mapID ~= -1 then
-			self.map = tonumber(mapID)
-			self.level = tonumber(keyLevel)
-			self.string:SetText(e.GetMapName(self.map))
-		else
-			self.map = -1
-			self.string:SetText('')
-		end
-	end
-
-	frame:SetScript('OnEnter', function(self)
+	self:SetScript('OnEnter', function(self)
 		if UnitLevel('player') == 110 then
-			if self.map ~= -1 then
+			if self.mapID ~= 0 then
 				astralMouseOver:ClearAllPoints()
-				astralMouseOver:SetPoint('TOPLEFT', self, 'CENTER', 35, 0)
-				astralMouseOver:SetText(e.MapApText(self.map, self.level))
+				astralMouseOver:SetPoint('TOPLEFT', self, 'CENTER', -85, 0)
+				astralMouseOver:SetText(e.MapApText(self.mapID, self.keyLevel))
 				astralMouseOver:AdjustSize()
 				astralMouseOver:Show()
 				AstralContentFrame.slider:SetAlpha(1)
 			end
 		end
-		end)
+	end)
 
- 	frame:SetScript('Onleave', function(self)
- 		astralMouseOver:Hide()
+	self:SetScript('OnLeave', function(self)
+		astralMouseOver:Hide()
 		AstralContentFrame.slider:SetAlpha(.2)
- 		end)
+	end)
 
-	return frame
+	return self
 end
 
-local function CreateKeyFrame(parent, keyLevel)
-	local frame = CreateFrame('FRAME', nil, parent)
-	frame:SetSize(45, 15)
-	frame.key = tonumber(keyLevel)
+-- ff82c5ff BNet 'blue'
 
-	frame.string = frame:CreateFontString('ARTWORK')
-	frame.string:SetFont(FONT_CONTENT, FONT_SIZE)
-	frame.string:SetPoint('TOPLEFT', frame, 'TOPLEFT')
-	if keyLevel ~= -1 then
-		frame.string:SetText(keyLevel)
+function UnitFrame:SetUnit(unit, class, mapID, keyLevel, cache, faction, btag)
+	self.mapID = mapID
+	self.keyLevel = keyLevel
+	self.levelString:SetText(keyLevel)
+	self.dungeonString:SetText(e.GetMapName(mapID))
+	if e.FrameListShown() == 'guild' then
+		self.unitID = e.UnitID(unit)
+		self.nameString:SetWidth(135)
+		self.nameString:SetText(WrapTextInColorCode(Ambiguate(unit, 'GUILD') , select(4, GetClassColor(class))))
+		self.weeklyTexture:SetShown(cache == 1)
 	end
-
-	function frame.SetKeyInfo(self, keyLevel)
-		if keyLevel ~= -1 then
-			self.key = keyLevel
-			self.string:SetText(self.key)
+	if e.FrameListShown() == 'friend' then
+		self.unitID = e.FriendID(unit)
+		self.nameString:SetWidth(165)		
+		if btag then
+			if tonumber(faction) == e.FACTION then
+				self.nameString:SetText( string.format('%s (%s)', WrapTextInColorCode(btag:sub(1, btag:find('#') - 1), 'ff82c5ff'), WrapTextInColorCode(unit:sub(1, unit:find('-') - 1), select(4, GetClassColor(class)))))
+			else
+				self.nameString:SetText( string.format('%s (%s)', WrapTextInColorCode(btag:sub(1, btag:find('#') - 1), 'ff82c5ff'), WrapTextInColorCode(unit:sub(1, unit:find('-') - 1), 'ff9d9d9d')))
+			end
 		else
-			self.string:SetText('')
+			self.nameString:SetText(WrapTextInColorCode(unit:sub(1, unit:find('-') - 1), select(4, GetClassColor(class))))
+		end
+		self.weeklyTexture:Hide()
+	end
+end
+
+function UnitFrame:ClearUnit()
+	self.unitID = 0
+	self.mapID = 0
+	self.keyLevel = 0
+	self.levelString:SetText('')
+	self.dungeonString:SetText('')
+	self.nameString:SetText('')
+	self.weeklyTexture:Hide()
+end
+
+local function Whisper_OnShow(self)
+	local isConnected = true
+	if e.FrameListShown() == 'guild' then
+		inviteType = GetDisplayedInviteType(e.GuildMemberGuid(e.Unit(AstralMenuFrame.unit)))
+		isConnected = e.GuildMemberOnline(e.Unit(AstralMenuFrame.unit))
+	end
+	if e.FrameListShown() == 'friend' then
+		inviteType = GetDisplayedInviteType(e.FriendGUID(e.Friend(AstralMenuFrame.unit)))
+		if AstralFriends[AstralMenuFrame.unit][2] then
+			local name = select(4, BNGetGameAccountInfo(e.GetFriendGaID(AstralFriends[AstralMenuFrame.unit][2])))
+			if not name then
+				isConnected = false
+			end
+		else
+			isConnected = e.IsFriendOnline(e.Friend(AstralMenuFrame.unit))
 		end
 	end
+	self.isConnected = isConnected
 
-	return frame
-end
-
-local function CreateCompleteFrame(parent, completed)
-	local frame = CreateFrame('FRAME', nil, parent)
-	frame:SetSize(15, 15)
-	frame.isCompleted = completed
-
-	frame.tex = frame:CreateTexture('BACKGROUND')
-	frame.tex:SetSize(15, 15)
-	frame.tex:SetPoint('TOPLEFT', frame, 'TOPLEFT')
-	frame.tex:SetTexture('Interface\\AddOns\\AstralKeys\\Media\\check.tga')
-
-	if frame.isCompleted == 1 then
-		frame:Show()
+	if not isConnected then
+		self:SetText(WrapTextInColorCode(self:GetText(), 'ff9d9d9d'))
 	else
-		frame:Hide()
+		self:SetText('Whisper')
 	end
+end
 
-	function frame:SetCompletedInfo(completed)
-		if not completed then self.isCompleted = 0 end
-		self.isCompleted = completed
-		if self.isCompleted == 1 then
-			self:Show()
+local function SendWhisper(self)
+	if not self.isConnected then return end
+
+	if AstralKeysSettings.frameOptions.list == 'guild' then
+		ChatFrame_SendTell(e.Unit(AstralMenuFrame.unit))
+	else
+		if AstralFriends[AstralMenuFrame.unit][2] then
+			ChatFrame_SendSmartTell(e.FriendBattleTag(AstralMenuFrame.unit))
 		else
-			self:Hide()
+			ChatFrame_SendTell(e.Friend(AstralMenuFrame.unit))
+		end
+	end
+end
+AstralMenuFrame:AddSelection('Whisper', SendWhisper, Whisper_OnShow)
+
+local function Invite_OnShow(self)
+	local inviteType
+	local isConnected = true
+	if e.FrameListShown() == 'guild' then
+		inviteType = GetDisplayedInviteType(e.GuildMemberGuid(e.Unit(AstralMenuFrame.unit)))
+		isConnected = e.GuildMemberOnline(e.Unit(AstralMenuFrame.unit))
+	end
+	if e.FrameListShown() == 'friend' then
+		inviteType = GetDisplayedInviteType(e.FriendGUID(e.Friend(AstralMenuFrame.unit)))
+		if AstralFriends[AstralMenuFrame.unit][2] then
+			local name = select(4, BNGetGameAccountInfo(e.GetFriendGaID(AstralFriends[AstralMenuFrame.unit][2])))
+			if not name then
+				isConnected = false
+			end
+		else
+			isConnected = e.IsFriendOnline(e.Friend(AstralMenuFrame.unit))
 		end
 	end
 
-	return frame
+	if inviteType == 'INVITE' then
+		self:SetText('Invite')
+	elseif inviteType == 'SUGGEST_INVITE' then
+		self:SetText('Suggest Invite')
+	elseif inviteType == 'REQUEST_INVITE' then
+		self:SetText('Request Invite')
+	end
+	if not isConnected then
+		self:SetText(WrapTextInColorCode(self:GetText(), 'ff9d9d9d'))
+	end
+
+	self.isConnected = isConnected
+	self.inviteType = inviteType
 end
+
+local function InviteUnit(self)
+	if not self.isConnected then return end
+	
+	if e.FrameListShown() == 'guild' then
+		if self.inviteType == 'INVITE' then
+			InviteToGroup(e.Unit(AstralMenuFrame.unit))
+		elseif self.inviteType == 'REQUEST_INVITE' then
+			RequestInviteFromUnit(e.Unit(AstralMenuFrame.unit))
+		elseif self.inviteType == 'SUGGEST_INVITE' then
+			InviteToGroup(e.Unit(AstralMenuFrame.unit))
+		end
+	end
+	if e.FrameListShown() == 'friend' then
+		if AstralFriends[AstralMenuFrame.unit][2] then -- bnet friend
+			if self.inviteType == 'INVITE' then
+				BNInviteFriend(e.FriendGAID(e.Friend(AstralMenuFrame.unit)))
+			elseif self.inviteType == 'REQUEST_INVITE' then
+				BNRequestInviteFriend(e.GetFriendGaID(AstralFriends[AstralMenuFrame.unit][2]))
+			elseif self.inviteType == 'SUGGEST_INVITE' then
+				BNInviteFriend(e.GetFriendGaID(AstralFriends[AstralMenuFrame.unit][2]))
+			end			
+		else
+			if self.inviteType == 'INVITE' then
+				BNInviteFriend(e.FriendGUID(e.Friend(AstralMenuFrame.unit)))
+			elseif self.inviteType == 'REQUEST_INVITE' then
+				BNRequestInviteFriend(e.FriendGUID(e.Friend(AstralMenuFrame.unit)))
+			elseif self.inviteType == 'SUGGEST_INVITE' then
+				BNInviteFriend(e.FriendGUID(e.Friend(AstralMenuFrame.unit)))
+			end			
+		end
+	end
+	-- GetDisplayedInviteType(guid)
+	-- InviteToGroup(fullname)
+	-- BNInviteFriend(gaID)
+	-- RequestInviteFromUnit(fullname)
+	-- BNRequestInviteFriend(gaID)
+end
+AstralMenuFrame:AddSelection('Invite', InviteUnit, Invite_OnShow)
+
+AstralMenuFrame:AddSelection('Cancel', function() return AstralMenuFrame:Hide() end)
 
 local AstralKeyFrame = CreateFrame('FRAME', 'AstralKeyFrame', UIParent)
 AstralKeyFrame:SetFrameStrata('DIALOG')
@@ -386,6 +433,7 @@ AstralKeyFrame:EnableKeyboard(true)
 AstralKeyFrame:SetPropagateKeyboardInput(true)
 AstralKeyFrame:SetClampedToScreen(true)
 AstralKeyFrame:Hide()
+AstralKeyFrame.updateDelay = 0
 
 local guildInfo = CreateFrame('FRAME', nil, AstralKeyFrame)
 guildInfo:SetSize(125, 13)
@@ -464,40 +512,22 @@ logo:SetTexture('Interface\\AddOns\\AstralKeys\\Media\\Astral.tga')
 logo:SetPoint('TOPLEFT', AstralKeyFrame, 'TOPLEFT', 10, -10)
 
 local title = e.CreateHeader(AstralKeyFrame, 'title', 220, 20, 'Astral Keys', 26)
---title:SetPoint('LEFT', logo, 'RIGHT', 10, -10) -- ORIGINAL
-title:SetPoint('LEFT', logo, 'RIGHT', 10, 0) 
+title:SetPoint('LEFT', logo, 'RIGHT', 10, 7) 
 
---------------------
----- UI TEST STUFF FOR FRIENDS GUILD LIST START
--------------------
+-----------------------------------
+---- Guild/Friend List buttons
 
 local guildButton = e.CreateOptionButton(AstralKeyFrame, 75)
-guildButton:SetHeight(16)
+guildButton:SetHeight(15)
 guildButton:SetNormalFontObject(FONT_OBJECT_CENTRE)
-guildButton:SetNormalTexture(guildButton:GetHighlightTexture())
 guildButton:SetPoint('TOPLEFT', title, 'BOTTOMLEFT', 0, -3)
 guildButton:SetText('Guild list')
 
 local friendButton = e.CreateOptionButton(AstralKeyFrame, 75)
-friendButton:SetHeight(16)
+friendButton:SetHeight(15)
 friendButton:SetPoint('LEFT', guildButton, 'RIGHT')
 friendButton:SetNormalFontObject(FONT_OBJECT_CENTRE)
 friendButton:SetText(WrapTextInColorCode('Friend list', 'ff9d9d9d'))
---{r=0.510, g=0.773, b=1.0} -- BN FRIEND COLOR CODE
---friendButton:SetText(WrapTextInColorCode('Friend list', 'ff82c5ff'))
-
-
-
-
-
-
-
-
-
-
--------------------------------
-------- UI FRIENDS GUILDS LIST END
----------------------------------
 
 AstralKeyFrame.centreDivider = AstralKeyFrame:CreateTexture('BACKGROUND')
 AstralKeyFrame.centreDivider:SetSize(1, 325)
@@ -509,19 +539,27 @@ closeButton:SetSize(15, 15)
 closeButton:SetNormalFontObject(FONT_OBJECT_CENTRE)
 closeButton:SetHighlightFontObject(FONT_OBJECT_HIGHLIGHT)
 closeButton:SetText('X')
+closeButton:SetScript('OnClick', function()
+	AstralKeyFrame:Hide()
+end)
+closeButton:SetPoint('TOPRIGHT', AstralKeyFrame, 'TOPRIGHT', -10, -10)
 
 local toggleButton = CreateFrame('BUTTON', nil, AstralKeyFrame)
 toggleButton:SetSize(16, 16)
 toggleButton:SetPoint('TOPRIGHT', closeButton, 'TOPLEFT', - 5, 0)
 toggleButton:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\minimize.tga')
-toggleButton:SetHighlightTexture('Interface\\AddOns\\AstralKeys\\Media\\minimize_highlight.tga', 'BLEND')
+toggleButton:SetScript('OnEnter', function(self)
+	self:GetNormalTexture():SetVertexColor(126/255, 126/255, 126/255)
+	end)
+toggleButton:SetScript('OnLeave', function(self)
+	self:GetNormalTexture():SetVertexColor(1, 1, 1)
+	end)
 
 toggleButton:SetScript('OnClick', function(self)
 	local left, bottom, width = AstralKeyFrame:GetRect()
-	if e.GetViewMode() == 0 then
-		e.SetViewMode(1)
+	if AstralKeysSettings.frameOptions.viewMode == 0 then
+		AstralKeysSettings.frameOptions.viewMode = 1
 		self:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\menu.tga')
-		self:SetHighlightTexture('Interface\\AddOns\\AstralKeys\\Media\\menu_highlight.tga', 'BLEND')
 		AstralKeyFrame:SetWidth(405)
 		AstralKeyFrame:ClearAllPoints()
 		AstralKeyFrame:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMLEFT', left + width - 405, bottom)
@@ -531,9 +569,8 @@ toggleButton:SetScript('OnClick', function(self)
 		AstralContentFrame:ClearAllPoints()
 		AstralContentFrame:SetPoint('TOPLEFT', AstralKeyFrame, 'TOPLEFT', 5, -95)
 	else
-		e.SetViewMode(0)
+		AstralKeysSettings.frameOptions.viewMode = 0
 		self:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\minimize.tga')
-		self:SetHighlightTexture('Interface\\AddOns\\AstralKeys\\Media\\minimize_highlight.tga', 'BLEND')
 		AstralKeyFrame:SetWidth(655)
 		AstralKeyFrame:ClearAllPoints()
 		AstralKeyFrame:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMLEFT', left + width - 655, bottom)
@@ -545,64 +582,21 @@ toggleButton:SetScript('OnClick', function(self)
 	end
 	end)
 
-closeButton:SetScript('OnClick', function()
-	AstralKeyFrame:Hide()
-end)
-
-closeButton:SetPoint('TOPRIGHT', AstralKeyFrame, 'TOPRIGHT', -10, -10)
-
-local quickOptionsFrame = CreateFrame('FRAME', 'quickOptionsFrame', AstralKeyFrame)
-quickOptionsFrame:SetSize(170, 45)
-quickOptionsFrame:SetBackdrop(BACKDROP)
-quickOptionsFrame:SetBackdropColor(0, 0, 0, 1)
-quickOptionsFrame:SetFrameLevel(10)
-quickOptionsFrame:SetPoint('TOPRIGHT', AstralKeyFrame, 'TOPRIGHT', -10, - 28)
-quickOptionsFrame:Hide()
-
-local showOffline = e.CreateCheckBox(quickOptionsFrame, 'Show offline', 150)
-showOffline:SetPoint('TOPRIGHT', quickOptionsFrame, 'TOPRIGHT', -5, -5)
-
-showOffline:SetScript('OnClick', function (self)
-	e.SetShowOffline(self:GetChecked())
-	AstralContentFrame:ResetSlider()
-	--e.UpdateLines()
-	e.UpdateFrames()
-end)
-
-local showMinimapButton = e.CreateCheckBox(quickOptionsFrame, 'Show Minimap Button', 150)
-showMinimapButton:SetPoint('TOPRIGHT', showOffline, 'BOTTOMRIGHT', 0, -5)
-showMinimapButton:SetScript('OnClick', function(self)
-	e.SetShowMinimapButton(self:GetChecked())
-	if e.ShowMinimapButton() then
-		e.icon:Show('AstralKeys')
-	else
-		e.icon:Hide('AstralKeys')
-	end
-end)
---[[
-local minKeyLevel = e.CreateEditBox(quickOptionsFrame, 'minKeyLevel', 25, 'Min announce level', 1, 100, 'LEFT')
-minKeyLevel:SetPoint('TOPRIGHT', showOffline, 'BOTTOMRIGHT', 0, -5)
-minKeyLevel:SetScript('OnEditFocusLost', function(self)
-	e.SetMinKeyLevel(self:GetNumber())
-		end)
-minKeyLevel:EnableMouseWheel(true)
-minKeyLevel:SetScript('OnMouseWheel', function(self, delta)
-	if self:GetNumber() + delta < self.minValue or self:GetNumber() + delta > self.maxValue then
-		return
-	else
-		self:SetNumber(self:GetNumber() + delta)
-		e.SetMinKeyLevel(self:GetNumber())
-	end
+local optionsButton = CreateFrame('BUTTON', nil, AstralKeyFrame)
+optionsButton:SetSize(16, 16)
+optionsButton:SetPoint('TOPRIGHT', toggleButton, 'TOPLEFT', -5, 0)
+optionsButton:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\menu3.tga')
+optionsButton:SetScript('OnEnter', function(self)
+	self:GetNormalTexture():SetVertexColor(126/255, 126/255, 126/255)
 	end)
-]]
-local quickOptions = CreateFrame('BUTTON', nil, AstralKeyFrame)
-quickOptions:SetSize(16, 16)
-quickOptions:SetPoint('TOPRIGHT', toggleButton, 'TOPLEFT', -5, 0)
-quickOptions:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\folder.tga')
-quickOptions:SetHighlightTexture('Interface\\AddOns\\AstralKeys\\Media\\folder_highlight.tga', 'BLEND')
-quickOptions:SetScript('OnClick', function ()
-	quickOptionsFrame:SetShown(not quickOptionsFrame:IsShown())
-end)
+optionsButton:SetScript('OnLeave', function(self)
+	self:GetNormalTexture():SetVertexColor(1, 1, 1)
+	end)
+
+optionsButton:SetScript('OnClick', function()
+	AstralOptionsFrame:SetShown( not AstralOptionsFrame:IsShown())
+	end)
+
 
 -- Announce Buttons
 -----------------------------------------------------
@@ -613,12 +607,18 @@ announceFrame:SetPoint('TOPRIGHT', closeButton, 'BOTTOMRIGHT', 0, -5)
 announceFrame.announce = CreateFrame('BUTTON', nil, announceFrame)
 announceFrame.announce:SetSize(16, 16)
 announceFrame.announce:SetPoint('LEFT', announceFrame, 'LEFT')
-announceFrame.announce:SetScript('OnClick', function(self)
-	if e.AnnounceKey() then
-		self:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\speaker2.tga')
+
+function e.ToggleAnnounce()
+	if AstralKeysSettings.options.announceKey then
+		announceFrame.announce:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\speaker2.tga')
 	else
-		self:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\speaker.tga')
+		announceFrame.announce:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\speaker.tga')
 	end
+	AstralKeysSettings.options.announceKey = not AstralKeysSettings.options.announceKey
+end
+
+
+announceFrame.announce:SetScript('OnClick', function(self)
 	e.ToggleAnnounce()
 	end)
 
@@ -652,15 +652,6 @@ guildAnnounce:SetScript('OnClick', function()
 	e.AnnounceCharacterKeys('GUILD')
 	end)
 
-quickOptionsFrame:SetScript('OnShow', function(self)
-	partyAnnounce:Disable()
-	guildAnnounce:Disable()
-	end)
-
-quickOptionsFrame:SetScript('OnHide', function(self)
-	partyAnnounce:Enable()
-	guildAnnounce:Enable()
-	end)
 
 -- Tooltip AstralKeyFrame
 -----------------------------------------------------
@@ -706,7 +697,20 @@ end
 
 local affixFrame = CreateFrame('FRAME', 'affixFrame', AstralKeyFrame)
 affixFrame:SetSize(200, 70)
+affixFrame:SetHitRectInsets(0, 100, 0, 50)
 affixFrame:SetPoint('TOPLEFT', logo, 'BOTTOMLEFT', 5, -10)
+
+affixFrame:SetScript('OnEnter', function(self)
+	mouseOverFrame:ClearAllPoints()
+	mouseOverFrame:SetPoint('TOPLEFT', self, 'TOPLEFT', 5, -20)
+	mouseOverFrame:SetText('Next week\'s affixes\n -' .. C_ChallengeMode.GetAffixInfo(e.AffixOne(1)) .. '\n -' .. C_ChallengeMode.GetAffixInfo(e.AffixTwo(1)) .. '\n -' .. C_ChallengeMode.GetAffixInfo(e.AffixThree(1)))
+	mouseOverFrame:AdjustSize()
+	mouseOverFrame:Show()
+	end)
+
+affixFrame:SetScript('OnLeave', function(self)
+	mouseOverFrame:Hide()
+	end)
 
 local affixHeader = e.CreateHeader(affixFrame, 'affixHeader', 175, 20, 'Affixes', 12)
 affixHeader:SetPoint('TOPLEFT', affixFrame, 'TOPLEFT')
@@ -856,24 +860,20 @@ function contentFrame:ResetSlider()
 	offset = 0
 	self.slider:SetPoint('TOPLEFT', self, 'TOPRIGHT')
 end
+local newOffset = 0
 
 contentFrame:SetScript('OnMouseWheel', function(self, delta)
-	if #sortedTable < 26 then return end
+	if sortedTable.numShown < 26 then return end
 
-	if delta < 0 then -- Scroll down
-		if (#sortedTable - offset) > 25 then
-			offset = offset - delta
-			e.UpdateLines()
-		end			
-	else
-		if offset > 0 then -- Scroll up
-			offset = offset - delta
-			e.UpdateLines()
-		end
-	end  
+	offset = offset - (delta * math.ceil(sortedTable.numShown/25))
+	
+	offset = math.max(0, offset)
+	offset = math.min(offset, sortedTable.numShown - 25)
+	
+	e.UpdateLines()
 
 	contentFrame.slider:ClearAllPoints()
-	contentFrame.slider:SetPoint('TOPLEFT', contentFrame, 'TOPRIGHT', 0, -offset/(#sortedTable - 25) * 365)
+	contentFrame.slider:SetPoint('TOPLEFT', contentFrame, 'TOPRIGHT', 0, -offset/(sortedTable.numShown - 25) * 365)
 
 	end)
 
@@ -886,16 +886,21 @@ contentFrame:SetScript('OnLeave', function()
 	end)
 
 local keyButton = CreateButton(contentFrame, 'keyButton', 50, 20, L['Level'], FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT) --75
+
 keyButton:SetPoint('BOTTOMLEFT', contentFrame, 'TOPLEFT')
 keyButton:SetScript('OnClick', function()
-	contentFrame:ResetSlider()
-	if e.GetSortMethod() ~= 4 then
-		e.SetOrientation(0)
-	else
-		e.SetOrientation(1 - e.GetOrientation())
+	if AstralMenuFrame:IsShown() then
+		AstralMenuFrame:Hide()
 	end
-	e.SetSortMethod(4)
-	e.SortTable(sortedTable, e.GetSortMethod())
+
+	contentFrame:ResetSlider()
+	if AstralKeysSettings.frameOptions.sortMethod ~= 4 then
+		AstralKeysSettings.frameOptions.orientation = 0
+	else
+		AstralKeysSettings.frameOptions.orientation = 1 - AstralKeysSettings.frameOptions.orientation
+	end
+	AstralKeysSettings.frameOptions.sortMethod = 4
+	e.SortTable(sortedTable[e.FrameListShown()], AstralKeysSettings.frameOptions.sortMethod)
 	e.UpdateLines()
 
 	end)
@@ -903,14 +908,17 @@ keyButton:SetScript('OnClick', function()
 local mapButton = CreateButton(contentFrame, 'mapButton', 190, 20, L['Dungeon'], FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT)
 mapButton:SetPoint('LEFT', keyButton, 'RIGHT')
 mapButton:SetScript('OnClick', function()
-	contentFrame:ResetSlider()
-	if e.GetSortMethod() ~= 3 then
-		e.SetOrientation(0)
-	else
-		e.SetOrientation(1 - e.GetOrientation())
+	if AstralMenuFrame:IsShown() then
+		AstralMenuFrame:Hide()
 	end
-	e.SetSortMethod(3)
-	e.SortTable(sortedTable, e.GetSortMethod())
+	contentFrame:ResetSlider()
+	if AstralKeysSettings.frameOptions.sortMethod ~= 3 then
+		AstralKeysSettings.frameOptions.orientation = 0
+	else
+		AstralKeysSettings.frameOptions.orientation = 1 - AstralKeysSettings.frameOptions.orientation
+	end
+	AstralKeysSettings.frameOptions.sortMethod = 3
+	e.SortTable(sortedTable[e.FrameListShown()], AstralKeysSettings.frameOptions.sortMethod)
 	e.UpdateLines()
 
 	end)
@@ -918,14 +926,17 @@ mapButton:SetScript('OnClick', function()
 local nameButton = CreateButton(contentFrame, 'nameButton', 110, 20, L['Player'], FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT)
 nameButton:SetPoint('LEFT', mapButton, 'RIGHT')
 nameButton:SetScript('OnClick', function()
-	contentFrame:ResetSlider()
-	if e.GetSortMethod() ~= 1 then
-		e.SetOrientation(0)
-	else
-		e.SetOrientation(1 - e.GetOrientation())
+	if AstralMenuFrame:IsShown() then
+		AstralMenuFrame:Hide()
 	end
-	e.SetSortMethod(1)
-	e.SortTable(sortedTable, e.GetSortMethod())
+	contentFrame:ResetSlider()
+	if AstralKeysSettings.frameOptions.sortMethod ~= 1 then
+		AstralKeysSettings.frameOptions.orientation = 0
+	else
+		AstralKeysSettings.frameOptions.orientation = 1 - AstralKeysSettings.frameOptions.orientation
+	end
+	AstralKeysSettings.frameOptions.sortMethod = 1
+	e.SortTable(sortedTable[e.FrameListShown()], AstralKeysSettings.frameOptions.sortMethod)
 	e.UpdateLines()
 
 	end)
@@ -933,17 +944,90 @@ nameButton:SetScript('OnClick', function()
 local completeButton = CreateButton(contentFrame, 'completeButton', 30, 20, e.CACHE_LEVEL .. '+', FONT_OBJECT_CENTRE, FONT_OBJECT_HIGHLIGHT)
 completeButton:SetPoint('LEFT', nameButton, 'RIGHT')
 completeButton:SetScript('OnClick', function()
-	contentFrame:ResetSlider()
-	if e.GetSortMethod() ~= 5 then
-		e.SetOrientation(0)
-	else
-		e.SetOrientation(1 - e.GetOrientation())
+	if AstralMenuFrame:IsShown() then
+		AstralMenuFrame:Hide()
 	end
-	e.SetSortMethod(5)
-	e.SortTable(sortedTable, e.GetSortMethod())
+	contentFrame:ResetSlider()
+	if AstralKeysSettings.frameOptions.sortMethod ~= 5 then
+		AstralKeysSettings.frameOptions.orientation = 0
+	else
+		AstralKeysSettings.frameOptions.orientation = 1 - AstralKeysSettings.frameOptions.orientation
+	end
+	AstralKeysSettings.frameOptions.sortMethod = 5
+	e.SortTable(sortedTable[e.FrameListShown()], AstralKeysSettings.frameOptions.sortMethod)
 	e.UpdateLines()
 
 	end)
+
+function AstralKeyFrame:OnUpdate(elapsed)
+	self.updateDelay = self.updateDelay + elapsed
+
+	if self.updateDelay < 0.75 then
+		return
+	end
+	self:SetScript('OnUpdate', nil)
+	self.updateDelay = 0
+	e.UpdateFrames()
+end
+
+guildButton:SetScript('OnClick', function()
+	if AstralMenuFrame:IsShown() then
+		AstralMenuFrame:Hide()
+	end
+	if e.FrameListShown() == 'friend' then
+		AstralContentFrame:ResetSlider()
+		friendButton:SetNormalTexture(nil)
+		friendButton:SetText(WrapTextInColorCode('Friend list', 'ff9d9d9d'))
+		
+		guildButton:SetNormalTexture(guildButton:GetHighlightTexture())
+		guildButton:SetText('Guild list')
+		e.SetFrameListShown('guild')
+		e.UpdateFrames()
+		completeButton:Show()
+		nameButton:SetW(130)
+	end
+	end)
+
+friendButton:SetScript('OnClick', function()
+	if AstralMenuFrame:IsShown() then
+		AstralMenuFrame:Hide()
+	end
+	if e.FrameListShown() == 'guild' then
+		e.SetFrameListShown('friend')
+
+		AstralContentFrame:ResetSlider()
+		guildButton:SetText(WrapTextInColorCode('Guild list', 'ff9d9d9d'))
+		guildButton:SetNormalTexture(nil)
+
+		friendButton:SetNormalTexture(friendButton:GetHighlightTexture())		
+		friendButton:SetText('Friend list')
+		e.UpdateFrames()
+
+		completeButton:Hide()
+		nameButton:SetW(180)
+	end
+	end)
+
+function AstralKeyFrame:ToggleLists()
+	if AstralKeysSettings.options.friendSync then
+		guildButton:Show()
+		friendButton:Show()
+	else
+		guildButton:Hide()
+		friendButton:Hide()
+		if e.FrameListShown() == 'friend' then
+			friendButton:SetNormalTexture(nil)	
+			friendButton:SetText(WrapTextInColorCode('Friend list', 'ff9d9d9d'))
+			
+			guildButton:SetNormalTexture(guildButton:GetHighlightTexture())
+			guildButton:SetText('Guild list')
+			e.SetFrameListShown('guild')
+			e.UpdateFrames()
+			completeButton:Show()
+			nameButton:SetW(130)
+		end
+	end
+end
 
 AstralKeyFrame:SetScript('OnKeyDown', function(self, key)
 	if key == 'ESCAPE' then
@@ -965,27 +1049,45 @@ AstralKeyFrame:SetScript('OnDragStop', function(self)
 	self:StopMovingOrSizing()
 	end)
 
+for i = 1, 25 do
+	unit_frames[i] = UnitFrame:NewFrame(AstralContentFrame)
+	unit_frames[i]:SetPoint('TOPLEFT', keyButton, 'BOTTOMLEFT', 5, (i-1) * -15 - 3)
+	MixIn(unit_frames[i], UnitFrame)
+end
+
 local init = false
 local function InitializeFrame()
 	init = true
+
+	if e.FrameListShown() == 'guild' then
+		guildButton:SetNormalTexture(guildButton:GetHighlightTexture())
+	else
+		guildButton:SetText(WrapTextInColorCode('Guild list', 'ff9d9d9d'))
+		guildButton:SetNormalTexture(nil)
+		friendButton:SetNormalTexture(friendButton:GetHighlightTexture())
+		friendButton:SetText('Friend list')
+		completeButton:Hide()
+		nameButton:SetW(180)
+	end
+
+	if not AstralKeysSettings.options.friendSync then
+		guildButton:Hide()
+		friendButton:Hide()
+	end
 
 	AstralAffixOne:UpdateInfo()
 	AstralAffixTwo:UpdateInfo()
 	AstralAffixThree:UpdateInfo()
 
-	showOffline:SetChecked(e.GetShowOffline())
-	--minKeyLevel:SetValue(e.GetMinKeyLevel())
-	showMinimapButton:SetChecked(e.ShowMinimapButton())
-
 	characterTable = e.DeepCopy(AstralCharacters)
 
-	if e.AnnounceKey() then
+	if AstralKeysSettings.options.announceKey then
 		announceFrame.announce:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\speaker.tga')
 	else
 		announceFrame.announce:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\speaker2.tga')
 	end
 
-	if e.GetViewMode() == 1 then
+	if AstralKeysSettings.frameOptions.viewMode == 1 then
 		AstralKeyFrame:SetWidth(405)
 		affixFrame:Hide()
 		astralCharacterFrame:Hide()
@@ -993,7 +1095,6 @@ local function InitializeFrame()
 		AstralContentFrame:ClearAllPoints()
 		AstralContentFrame:SetPoint('TOPLEFT', AstralKeyFrame, 'TOPLEFT', 5, -95)
 		toggleButton:SetNormalTexture('Interface\\AddOns\\AstralKeys\\Media\\menu.tga')
-		toggleButton:SetHighlightTexture('Interface\\AddOns\\AstralKeys\\Media\\menu_highlight.tga', 'BLEND')
 	end
 
 	local id = e.GetCharacterID(e.Player())
@@ -1051,18 +1152,6 @@ local function InitializeFrame()
 
 		end)
 
-	for i = 1, 25 do
-		nameFrames[i] = CreateNameFrame(AstralContentFrame, '')
-		keyFrames[i] = CreateKeyFrame(AstralContentFrame, -1)
-		mapFrames[i] = CreateMapFrame(AstralContentFrame, -1)
-		completedFrames[i] = CreateCompleteFrame(AstralContentFrame, nil)
-
-		keyFrames[i]:SetPoint('TOPLEFT', keyButton, 'BOTTOMLEFT', 5, (i-1) * -15 - 3)
-		mapFrames[i]:SetPoint('TOPLEFT', mapButton, 'BOTTOMLEFT', 5, (i-1) * -15 - 3)
-		nameFrames[i]:SetPoint('TOPLEFT', nameButton, 'BOTTOMLEFT', 5, (i-1) * -15 - 3)
-		completedFrames[i]:SetPoint('TOPLEFT', completeButton, 'BOTTOMLEFT', 5, (i-1) * -15, -3)
-	end
-
 	e.UpdateFrames()
 	e.UpdateCharacterFrames()
 
@@ -1088,34 +1177,39 @@ end
 
 function e.UpdateLines()
 	if not init then return end
-	local indexEnd = math.min(25, #sortedTable)
+	local list = e.FrameListShown()
+	local lastIndex = 1
 
-	for i = 1, indexEnd do
-		nameFrames[i]:SetNameInfo(sortedTable[i + offset][1], sortedTable[i + offset][2])
-		keyFrames[i]:SetKeyInfo(sortedTable[i + offset][4])
-		mapFrames[i]:SetMapInfo(sortedTable[i + offset][3], sortedTable[i + offset][4])
-		completedFrames[i]:SetCompletedInfo(sortedTable[i + offset][5])
+	for i = 1, math.min(sortedTable.numShown, 25) do
+		for j = lastIndex, #sortedTable[list] do
+			if sortedTable[list][j].isShown then
+				lastIndex = j + 1
+				unit_frames[i]:SetUnit(unpack(sortedTable[list][j + offset], 1, 7))
+				break
+			end
+		end
 	end
-	for i = indexEnd + 1, 25 do
-		nameFrames[i]:SetNameInfo('', nil, nil)
-		keyFrames[i]:SetKeyInfo(-1)
-		mapFrames[i]:SetMapInfo(-1, nil)
-		completedFrames[i]:SetCompletedInfo(0)
+
+	for i = sortedTable.numShown + 1, 25 do
+		unit_frames[i]:ClearUnit()
 	end
 end
 
 function e.UpdateFrames()
 	if not init or not AstralKeyFrame:IsShown() then return end
 
-	sortedTable = e.UpdateTables(sortedTable)
+	e.UpdateTable(sortedTable)
 
-	e.SortTable(sortedTable, e.GetSortMethod())
+	if sortedTable.numShown + offset > sortedTable.numShown then
+		offset = sortedTable.numShown - 25
+	end
 
-	if #sortedTable > 25 then
+	if sortedTable.numShown > 25 then
 		AstralContentFrame.slider:Show()
 	else
 		AstralContentFrame.slider:Hide()
 	end
+
 	e.UpdateLines()
 end
 
@@ -1141,6 +1235,26 @@ function e.UpdateCharacterFrames()
 				characters[i]:UpdateInformation('')
 			end
 		end
+	end
+end
+
+function e.AddUnitToTable(unit, class, faction, listType, mapID, level, weekly, btag)
+	if not sortedTable[listType] then
+		sortedTable[listType] = {}
+	end
+	local found = false
+	for i = 1, #sortedTable[listType] do
+		if sortedTable[listType][i][1] == unit then
+			sortedTable[listType][i][3] = mapID
+			sortedTable[listType][i][4] = level
+			sortedTable[listType][i][5] = weekly
+			found = true
+			break
+		end
+	end
+
+	if not found then
+		sortedTable[listType][#sortedTable[listType] + 1] = {unit, class, mapID, level, weekly, faction, btag}
 	end
 end
 

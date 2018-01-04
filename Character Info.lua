@@ -1,6 +1,7 @@
 local _, e = ...
 
-local playerClass, playerNameRealm, characterID
+local playerClass, characterID
+local playerNameRealm = UnitName('player') .. '-' .. GetRealmName():gsub("%s+", "")
 local characterList = {}
 
 function e.SetCharacterID(unit, unitID)
@@ -93,4 +94,16 @@ end
 -- @return string Name of player with realm attached
 function e.Player()
 	return playerNameRealm
+end
+
+function e.GetCharacterKey(unit)
+	if not unit then return '' end
+
+	local id = e.UnitID(unit)
+	
+	if id then 
+		return AstralKeys[id][4] .. ' ' .. C_ChallengeMode.GetMapInfo(AstralKeys[id][3]) -- 4:: key level 3:: mapID
+	else
+		return WrapTextInColorCode('No key found.', 'ff9d9d9d')
+	end
 end
