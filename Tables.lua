@@ -1,69 +1,71 @@
 local _, e = ...
 
-local function ParseOnlineUnits(A)
-	local tbl = {}
-	local units = {}
-	local guildName
-	local numOnline = select(2, GetNumGuildMembers())
-	for i = 1, numOnline do
-		guildName = GetGuildRosterInfo(i)
-		units[guildName] = true
-	end
+local FILTER_METHOD = {}
+local SORT_MEDTHOD = {}
 
-	for k, v in pairs(A) do
-		if units[v[1]] then
-			tbl[#tbl+1] = v
+FILTER_METHOD['guild'] = function(A)
+	if not type(A) == 'table' then return end
+
+	for i = 1, #A.guild do
+		if e.UnitInGuild(A.guild[i][1]) then
+			if AstralKeysSettings.options.showOffline then
+				A.guild[i].isShown = true
+			else
+				A.guild[i].isShown = e.GuildMemberOnline(A.guild[i][1])
+			end
+
+			A.guild[i].isShown = A.guild[i].isShown and AstralKeysSettings.options.rankFilters[e.GuildMemberRank(A.guild[i][1])]
+
+			if A.guild[i].isShown then
+				A.numShown = A.numShown + 1
+			end
+		else
+			A.guild[i].isShown = false
 		end
 	end
-
-	return tbl
 end
 
-function e.UpdateTables(table)
-	table = e.DeepCopy(AstralKeys)
-	if not e.GetShowOffline() then
-		table = ParseOnlineUnits(table)
-	end
+function e.AddListFilter(list, f)
+	if type(list) ~= 'string' and list == '' then return end
+	if type(f) ~= 'function' then return end
 
-	return table
+	FILTER_METHOD[list] = f
+end
+
+function e.AddListSort(list, f)
+	if type(list) ~= 'string' and list == '' then return end
+	if type(f) ~= 'function' then return end
+
+	SORT_MEDTHOD[list] = f
+end
+
+SORT_MEDTHOD['guild'] = function(A, v)
+	if v == 3 then
+		table.sort(A, function(a, b) 
+			if AstralKeysSettings.frameOptions.orientation == 0 then
+				return e.GetMapName(a[v]) > e.GetMapName(b[v])
+			else
+				return e.GetMapName(b[v]) > e.GetMapName(a[v])
+			end
+			end)
+	else
+		table.sort(A, function(a, b)
+			if AstralKeysSettings.frameOptions.orientation == 0 then
+				return a[v] > b[v]
+			else
+				return b[v] > a[v]
+			end
+		end)
+	end
+end
+
+function e.UpdateTable(tbl)
+	tbl.numShown = 0
+	FILTER_METHOD[e.FrameListShown()](tbl)
 end
 
 function e.SortTable(A, v)
-	if v == 3 then -- Map Name
-	    for j = 2, #A do
-	        --Select item to sort
-	        local key = A[j]
-	        local i = j - 1
-	        while (i > 0) and (e.GetMapName(A[i][v]) > e.GetMapName(key[v])) do
-	            --Move placement index back
-	            A[i + 1] = A[i]
-	            i = i - 1
-	        end
-	        --Place current item back into the list
-	        A[i + 1] = key
-	    end
-
-	    if e.GetOrientation() == 0 then
-	    	table.sort(A, function(a, b) return e.GetMapName(a[v]) > e.GetMapName(b[v]) end)
-	    end
-	else
-	    for j = 2, #A do
-	        --Select item to sort
-	        local key = A[j]
-	        local i = j - 1
-	        while (i > 0) and (A[i][v] > key[v]) do
-	            --Move placement index back
-	            A[i + 1] = A[i]
-	            i = i - 1
-	        end
-	        --Place current item back into the list
-	        A[i + 1] = key
-	    end
-
-	    if e.GetOrientation() == 0 then
-	    	table.sort(A, function(a, b) return a[v] > b[v] end)
-	    end
-	end
+	SORT_MEDTHOD[e.FrameListShown()](A, v)
 end
 
 function e.DeepCopy(orig)
