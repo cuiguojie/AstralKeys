@@ -1,12 +1,12 @@
 local ADDON, e = ...
 
 local find, sub, strformat = string.find, string.sub, string.format
-local SendAddonMessage, BNSendGameData = SendAddonMessage, BNSendGameData
+local BNSendGameData, SendAddonMessage, SendChatMessage = BNSendGameData, C_ChatInfo.SendAddonMessage, SendChatMessage
 
 -- Variables for syncing information
 -- Will only accept information from other clients with same version settings
-local SYNC_VERSION = 'sync4'
-e.UPDATE_VERSION = 'updateV7'
+local SYNC_VERSION = 'sync5'
+e.UPDATE_VERSION = 'updateV8'
 
 local versionList = {}
 local highestVersion = 0
@@ -21,12 +21,12 @@ local ANNOUNCE_MESSAGE = 'Astral Keys: New key %s + %d'
 
 -- Interval times for syncing keys between clients
 -- Two different time settings for in a raid or otherwise
--- Creates a random variance between +- [.200, .500] to help prevent
+-- Creates a random variance between +- [.001, .100] to help prevent
 -- disconnects from too many addon messages
-local send_variance = ((-1)^math.random(1,2)) * math.random(1, 100)/ 10^3 -- random number to space out messages being sent between clients
+local SEND_VARIANCE = ((-1)^math.random(1,2)) * math.random(1, 100)/ 10^3 -- random number to space out messages being sent between clients
 local SEND_INTERVAL = {}
-SEND_INTERVAL[1] = 0.2 + send_variance -- Normal operations
-SEND_INTERVAL[2] = 4 + send_variance -- Used when in a raiding environment
+SEND_INTERVAL[1] = 0.2 + SEND_VARIANCE -- Normal operations
+SEND_INTERVAL[2] = 1 + SEND_VARIANCE -- Used when in a raiding environment
 SEND_INTERVAL[3] = 2 -- Used for version checks
 
 -- Current setting to be used
@@ -36,7 +36,8 @@ local SEND_INTERVAL_SETTING = 1 -- What intervel to use for sending key informat
 AstralComs = CreateFrame('FRAME', 'AstralComs')
 
 function AstralComs:RegisterPrefix(channel, prefix, f)
-	if not channel then channel = 'GUILD' end -- Default to guild as channel if none is specified
+	local channel = channel or 'GUILD' -- Defaults to guild channel
+
 	if self:IsPrefixRegistered(channel, prefix) then return end -- Did we register something to the same channel with the same name?
 
 	if not self.dtbl[channel] then self.dtbl[channel] = {} end
@@ -186,6 +187,8 @@ function AstralComs:Init()
 end
 AstralComs:Init()
 
+-- IN GUILD.LUA
+
 local function UpdateUnitKey(msg)
 	local timeStamp = e.WeekTime() -- part of the week we got this key update, used to determine if a key got de-leveled or not
 
@@ -220,6 +223,7 @@ end
 AstralComs:RegisterPrefix('GUILD', e.UPDATE_VERSION, UpdateUnitKey)
 
 local function SyncReceive(entry, sender)
+	if sender == e.Player() then return end
 	local unit, class, dungeonID, keyLevel, weekly, week, timeStamp
 	if AstralKeyFrame:IsShown() then
 		AstralKeyFrame:SetScript('OnUpdate', AstralKeyFrame.OnUpdate)
@@ -229,6 +233,8 @@ local function SyncReceive(entry, sender)
 	local _pos = 0
 	while find(entry, '_', _pos) do
 		
+		--unit, class, dungeonID, keyLevel, weekly, week, timeStamp = string.split(':', entry:sub(_pos, entry:find('_', _pos) - 1))
+
 		class, dungeonID, keyLevel, weekly, week, timeStamp = entry:match(':(%a+):(%d+):(%d+):(%d+):(%d+):(%d)', entry:find(':', _pos))
 		unit = entry:sub(_pos, entry:find(':', _pos) - 1)
 		
@@ -245,7 +251,7 @@ local function SyncReceive(entry, sender)
 			local id = e.UnitID(unit)
 			if id then
 				if AstralKeys[id][7] < timeStamp then
-					if weekly == 1 then AstralKeys[id][5] = weekly end
+					if weekly == 1 then AstralKeys[id][5] = 1 end
 
 					AstralKeys[id][3] = dungeonID
 					AstralKeys[id][4] = keyLevel
@@ -267,6 +273,7 @@ local function UpdateWeekly(weekly, sender)
 	local id = e.UnitID(sender)
 	if id then
 		AstralKeys[id][5] = tonumber(weekly)
+		AstralKeys[id][7] = e.WeekTime()
 		e.UpdateFrames()
 	end
 end
@@ -293,9 +300,13 @@ local function PushKeyList(msg, sender)
 			msg = ''
 		end
 	end
+	if msg ~= '' then
+		AstralComs:NewMessage('AstralKeys', strformat('%s %s', SYNC_VERSION, msg), 'GUILD')
+	end
 end
-
 AstralComs:RegisterPrefix('GUILD', 'request', PushKeyList)
+
+-- END OF GUILD.LUA
 
 local function VersionRequest()
 	local version = GetAddOnMetadata('AstralKeys', 'version')
@@ -357,10 +368,16 @@ AstralEvents:Register('ENCOUNTER_START', function()
 	AstralComs:UnregisterPrefix('GUILD', 'request')
 	end, 'encStart')
 
--- Boss is over, let's send informatino once again
-AstralEvents:Register('ENCOUNTER_STOP', function()
-	AstralComs:RegisterPrefix('GUID', 'request', PushKeyList)
-	end, 'encStop')
+if not C_ChatInfo then
+	AstralEvents:Register('ENCOUNTER_STOP', function()
+		AstralComs:RegisterPrefix('GUID', 'request', PushKeyList)
+		end, 'encStop')
+else
+	AstralEvents:Register('ENCOUNTER_END', function()
+		AstralComs:RegisterPrefix('GUID', 'request', PushKeyList)
+		end, 'encStop')
+end
+
 
 -- Checks to see if we zone into a raid instance,
 -- Let's increase the send interval if we are raiding, client sync can wait, dc's can't
@@ -374,20 +391,6 @@ CheckInstanceType = function()
 	end
 end
 AstralEvents:Register('PLAYER_ENTERING_WORLD', CheckInstanceType, 'entering_world')
-
-local function ResetAK()
-	AstralKeysSettings['reset'] = false
-	e.WipeUnitList()
-	e.WipeFrames()
-	e.FindKeyStone(true)
-	e.UpdateAffixes()
-	C_Timer.After(.75, function()
-		e.UpdateCharacterFrames()
-		e.UpdateFrames()
-	end)
-end
-AstralComs:RegisterPrefix('GUILD', 'resetAK', ResetAK)
---SendAddonMessage('AstralKeys', 'resetAK', 'GUILD')
 
 function e.AnnounceCharacterKeys(channel)
 	for i = 1, #AstralCharacters do

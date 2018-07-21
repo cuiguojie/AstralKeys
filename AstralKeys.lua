@@ -5,8 +5,9 @@ if not AstralCharacters then AstralCharacters = {} end
 if not AstralFriends then AstralFriends = {} end
 
 local initializeTime = {} 
-initializeTime[1]= 1500390000 -- US Tuesday at reset
-initializeTime[2]= 1500447600 -- EU Wednesday at reset
+initializeTime[1] = 1500390000 -- US Tuesday at reset
+initializeTime[2] = 1500447600 -- EU Wednesday at reset
+initializeTime[4] = 0
 
 local SI = {}
 SI[0] = ''
@@ -77,10 +78,6 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 		wipe(AstralCharacters)
 		wipe(AstralKeys)
 		wipe(AstralFriends)
-		--AstralAffixes = {}
-		--AstralAffixes[1] = 0
-		--AstralAffixes[2] = 0
-		--AstralAffixes[3] = 0
 		AstralKeysSettings.initTime = e.DataResetTime()
 		e.FindKeyStone(true, false)
 	end
@@ -100,17 +97,18 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 				end
 
 				if time(date('*t', GetServerTime())) > AstralKeysSettings.initTime then
+					e.WipeCharacterList()
+					e.WipeUnitList()
 					AstralCharacters = {}
 					AstralKeys = {}
-					AstralAffixes = {}
-					AstralAffixes[1] = 0
-					AstralAffixes[2] = 0
-					AstralAffixes[3] = 0
+					wipe(AstralFriends)
 					AstralKeysSettings.initTime = e.DataResetTime()
 					e.Week = math.floor((GetServerTime() - initializeTime[1]) / 604800)
 					e.FindKeyStone(true, false)
+					e.GetBestClear()
 					self:SetScript('OnUpdate', nil)
 					self = nil
+					return nil
 				end
 				self.elapsed = 0
 			end
@@ -130,18 +128,18 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 				end
 
 				if time(date('*t', GetServerTime())) > AstralKeysSettings.initTime then
+					e.WipeCharacterList()
+					e.WipeUnitList()
 					AstralCharacters = {}
 					AstralKeys = {}
 					wipe(AstralFriends)
-					AstralAffixes = {}
-					AstralAffixes[1] = 0
-					AstralAffixes[2] = 0
-					AstralAffixes[3] = 0
 					AstralKeysSettings.initTime = e.DataResetTime()
 					e.FindKeyStone(true, false)
+					e.GetBestClear()
 					e.Week = math.floor((GetServerTime() - initializeTime[2]) / 604800)
 					self:SetScript('OnUpdate', nil)
 					self = nil
+					return nil
 				end
 				self.elapsed = 0
 			end
@@ -159,11 +157,12 @@ AstralEvents:Register('PLAYER_LOGIN', function()
 
 	for i = 1, #AstralFriends do
 		e.SetFriendID(AstralFriends[i][1], i)
-		e.AddUnitToTable(AstralFriends[i][1], AstralFriends[i][3], AstralFriends[i][8], 'friend',  AstralFriends[i][4], AstralFriends[i][5], nil, AstralFriends[i][2])
+		e.AddUnitToTable(AstralFriends[i][1], AstralFriends[i][3], AstralFriends[i][8], 'friend',  AstralFriends[i][4], AstralFriends[i][5], AstralFriends[i][9], AstralFriends[i][2])
 	end
 
-	RegisterAddonMessagePrefix('AstralKeys')
-
-	C_ChallengeMode.RequestMapInfo()
+	C_ChatInfo.RegisterAddonMessagePrefix('AstralKeys')
+	--C_MythicPlus.RequestMapInfo()
+	C_MythicPlus.RequestCurrentAffixes()
+	C_MythicPlus.RequestRewards()
 
 end, 'login')

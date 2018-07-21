@@ -26,19 +26,21 @@ local function Weekly()
 end
 
 local function InitData()
-	e.BuildMapTable()
-	e.GetBestClear()
-	e.FindKeyStone(true, false)
-	AstralComs:NewMessage('AstralKeys', 'request', 'GUILD')
-
 	AstralEvents:Unregister('CHALLENGE_MODE_MAPS_UPDATE', 'initData')
+	C_ChatInfo.RegisterAddonMessagePrefix('AstralKeys')
+	e.FindKeyStone(true, false)
+	e.GetBestClear()
+
+	AstralComs:NewMessage('AstralKeys', 'request', 'GUILD')	
+
+	if UnitLevel('player') < 110 then return end
 	AstralEvents:Register('CHALLENGE_MODE_MAPS_UPDATE', Weekly, 'weeklyCheck')
 end
 AstralEvents:Register('CHALLENGE_MODE_MAPS_UPDATE', InitData, 'initData')
 
-
+--|cffa335ee|Hkeystone:138019:206:13:5:3:9:0|h[Keystone: Neltharion's Lair (13)]|h|r 5 
 function e.CreateKeyLink(mapID, keyLevel)
-	return strformat('\124cffa335ee\124Hkeystone:%d:%d:%d:%d:%d|h[Keystone: %s]\124h\124r', mapID, keyLevel, e.AffixOne(), e.AffixTwo(), e.AffixThree(), e.GetMapName(mapID))--:gsub('\124\124', '\124')
+	return strformat('\124cffa335ee\124Hkeystone:138019:%d:%d:%d:%d:%d:%d|h[Keystone: %s]\124h\124r', mapID, keyLevel, e.AffixOne(), e.AffixTwo(), e.AffixThree(), e.AffixFour(), e.GetMapName(mapID))--:gsub('\124\124', '\124')
 end
 
 AstralEvents:Register('CHALLENGE_MODE_COMPLETED', function()
@@ -53,21 +55,6 @@ local function CompletedWeekly()
 	else
 		return 0
 	end
-end
-
-function e.GetKeyInfo()
-	local mapID, keyLevel, a1, a2, a3, s, itemID
-
-	for bag = 0, NUM_BAG_SLOTS + 1 do
-		for slot = 1, GetContainerNumSlots(bag) do
-			itemID = GetContainerItemID(bag, slot)
-			if (itemID and itemID == 138019) then -- Found the key
-				return e.ParseLink(GetContainerItemLink(bag, slot)) -- return the mapID, keyLevel, and affixes from the link
-			end
-		end
-	end
-
-	return nil -- No key found, just return nil
 end
 
 local function ParseLootMsgForKey(...)
@@ -85,20 +72,21 @@ local function ParseLootMsgForKey(...)
 end
 
 function e.FindKeyStone(sendUpdate, anounceKey)
-	if UnitLevel('player') ~= 110 then return end
-	local mapID, keyLevel, affix1, affix2, affix3 = e.GetKeyInfo()
+	if UnitLevel('player') < 110 then return end
+
+	local mapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
+	local keyLevel = C_MythicPlus.GetOwnedKeystoneLevel()
 
 	local msg = ''
 
-	if mapID then -- Won't have a mapID without having a
+	if mapID then 
 		msg = string.format('%s:%s:%d:%d:%d:%d:%s', e.Player(), e.PlayerClass(), mapID, keyLevel, CompletedWeekly(), e.Week, e.FACTION)
 	end
 
-	if not mapID and not AstralEvents:IsRegistered('CHAT_MSG_LOOT', 'loot_msg_parse') then -- No key found or event registered, let's look for those keys
+	if not mapID and not AstralEvents:IsRegistered('CHAT_MSG_LOOT', 'loot_msg_parse') then
 		AstralEvents:Register('CHAT_MSG_LOOT', ParseLootMsgForKey, 'loot_msg_parse')
 	end
 
-	-- Get the current key information the db to check for new key announcement
 	local oldMap, oldLevel = e.UnitMapID(e.UnitID(e.Player())), e.UnitKeyLevel(e.UnitID(e.Player()))
 
 	-- Key found, unregister function, no longer needed
@@ -133,23 +121,17 @@ function e.FindKeyStone(sendUpdate, anounceKey)
 	end
 end
 
--- Parses item link to get mapID, key level, affix1, affix2, affix3
--- @param link Item Link for keystone
--- return int ID's for mapID, keyLevel, affix1, affix2, affix3 
--- return ex. 239 12 4 5 10
-function e.ParseLink(link)
-	if not link:find('keystone') then return end -- Not a keystone link, don't do anything, also something went wrong shouldn't be here if not keystone link
-	return link:gsub('\124', '\124\124'):match(':(%d+):(%d+):(%d+):(%d+):(%d+)')
-end
-
 -- Finds best map clear fothe week for logged on character. If character already is in database
 -- updates the information, else creates new entry for character
 function e.GetBestClear()
-	if UnitLevel('player') ~= 110 then return end
+	if UnitLevel('player') < 110 then return end
+	local bestLevel = C_MythicPlus.GetWeeklyChestRewardLevel()
+	--[[
 	local bestLevel = 0
 	local bestMap = 0
 	for _, v in pairs(C_ChallengeMode.GetMapTable()) do
-		local _, _, weeklyBestLevel = C_ChallengeMode.GetMapPlayerStats(v)
+		local _, weeklyBestLevel = C_MythicPlus.GetWeeklyBestForMap(v)
+		Console:AddLine(v, weeklyBestLevel)
 		if weeklyBestLevel then
 			if weeklyBestLevel > bestLevel then
 				bestLevel = weeklyBestLevel
@@ -157,7 +139,7 @@ function e.GetBestClear()
 			end
 		end
 	end
-
+]]
 	local id = e.GetCharacterID(e.Player())
 	if id then
 		AstralCharacters[id].map = bestMap
@@ -167,21 +149,3 @@ function e.GetBestClear()
 		e.SetCharacterID(e.Player(), #AstralCharacters)
 	end
 end
-
--- Deprecated
---[[
-if not AstralAffixes then 
-	AstralAffixes = {}
-	AstralAffixes[1] = 0
-	AstralAffixes[2] = 0
-	AstralAffixes[3] = 0
-end
-
-function e.SetAffix(affixNumber, affixID)
-	AstralAffixes[affixNumber] = affixID
-end
-
-function e.GetAffix(affixNumber)
-	return AstralAffixes[affixNumber]
-end
-]]
